@@ -1,8 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from database import get_database, test_connection
+from database import test_connection, setup_indexes
+from routes.users import router as users_router
 
-app = FastAPI()
+app = FastAPI(title="SherLostHolmes API", version="1.0.0")
 
 # Configure CORS
 app.add_middleware(
@@ -12,6 +13,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include routers
+app.include_router(users_router)
+
+# Don't block startup with database operations
+# Indexes will be created on first db-test call
 
 @app.get("/")
 def read_root():
@@ -24,4 +31,8 @@ def get_data():
 @app.get("/api/db-test")
 def db_test():
     return test_connection()
+
+@app.post("/api/setup-indexes")
+def run_setup_indexes():
+    return setup_indexes()
 
