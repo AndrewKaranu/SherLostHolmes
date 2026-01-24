@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from database import get_database, test_connection
 
 app = FastAPI()
 
@@ -19,4 +20,8 @@ def read_root():
 @app.get("/api/data")
 def get_data():
     return {"data": "This is data from the backend"}
-    return {"data": "This is data from the backend"}
+
+@app.get("/api/db-test")
+def db_test():
+    return test_connection()
+
