@@ -1,17 +1,25 @@
 'use client';
+
 import { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 
+// NominShredding Components
+import GameLayout from '@/components/GameLayout';
+import HangingSign from '@/components/HangingSign';
+import ChainLink from '@/components/ChainLink';
+
 export default function Home() {
   const { isLoaded, isSignedIn, user } = useUser();
   const router = useRouter();
+  
+  // State for backend connectivity tracking
   const [backendMessage, setBackendMessage] = useState('Loading...');
   const [dbStatus, setDbStatus] = useState('Checking...');
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
 
+  // 1. Test backend and database connection
   useEffect(() => {
-    // Test backend connection
     fetch('http://127.0.0.1:8000/api/data')
       .then((res) => res.json())
       .then((data) => setBackendMessage(data.data))
@@ -20,7 +28,6 @@ export default function Home() {
         setBackendMessage('Error connecting to backend');
       });
 
-    // Test database connection
     fetch('http://127.0.0.1:8000/api/db-test')
       .then((res) => res.json())
       .then((data) => setDbStatus(data.message))
@@ -30,18 +37,16 @@ export default function Home() {
       });
   }, []);
 
-  // Redirect to complete profile if no student ID
+  // 2. Redirect to profile completion if student ID is missing
   useEffect(() => {
     if (isLoaded && isSignedIn && user) {
-      // Check if user has completed their profile (has studentId)
       if (!user.unsafeMetadata?.studentId) {
         router.push('/complete-profile');
-        return;
       }
     }
   }, [isLoaded, isSignedIn, user, router]);
 
-  // Sync user to MongoDB when signed in
+  // 3. Sync user to MongoDB when signed in
   useEffect(() => {
     if (isLoaded && isSignedIn && user) {
       const email = user.primaryEmailAddress?.emailAddress;
@@ -65,32 +70,29 @@ export default function Home() {
   }, [isLoaded, isSignedIn, user]);
 
   return (
-    <div style={{ padding: '2rem' }}>
-      <h2>Welcome to SherLostHolmes</h2>
-      <p>AI-powered Lost and Found System</p>
+    <GameLayout>
+      {/* Visual Components from NominShredding */}
+      <HangingSign icon="login" title="Dashboard" href="/dashboard" />
+      <ChainLink />
       
-      <div style={{ marginTop: '2rem', padding: '1rem', background: '#f5f5f5', borderRadius: '8px' }}>
-        <h3>System Status</h3>
-        <p><strong>Backend:</strong> {backendMessage}</p>
-        <p><strong>Database:</strong> {dbStatus}</p>
+      {/* If you want to see system status during dev, you can keep this overlay or remove it for production */}
+      <div style={{ 
+        position: 'fixed', 
+        bottom: '10px', 
+        right: '10px', 
+        fontSize: '10px', 
+        opacity: 0.5,
+        color: 'white',
+        pointerEvents: 'none'
+      }}>
+        Backend: {backendMessage} | DB: {dbStatus}
       </div>
 
-      <div style={{ marginTop: '2rem', padding: '1rem', background: '#e8f4e8', borderRadius: '8px' }}>
-        <h3>Authentication Status</h3>
-        {!isLoaded ? (
-          <p>Loading authentication...</p>
-        ) : isSignedIn ? (
-          <div>
-            <p>✅ Signed in as: <strong>{user.primaryEmailAddress?.emailAddress}</strong></p>
-            <p>Student ID: <strong>{user.unsafeMetadata?.studentId as string || 'Not set'}</strong></p>
-            <p>User ID: {user.id}</p>
-            {syncStatus && <p>Database sync: {syncStatus}</p>}
-          </div>
-        ) : (
-          <p>❌ Not signed in. Click Sign In or Sign Up above.</p>
-        )}
-      </div>
-    </div>
+      {!isSignedIn && (
+        <>
+          <HangingSign icon="person_add" title="Register" href="/sign-up" delay="0.5s" />
+        </>
+      )}
+    </GameLayout>
   );
 }
-
