@@ -4,7 +4,7 @@ Items Routes - Lost/Found Item Reports
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List, Literal
-from datetime import datetime
+from datetime import datetime, timedelta
 from bson import ObjectId
 
 from database import get_items_collection
@@ -170,6 +170,44 @@ async def get_all_items(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch items: {str(e)}")
+
+
+@router.get("/archived", response_model=List[ItemResponse])
+async def get_archived_items(limit: int = 100):
+    """
+    Unclaimed items in lost & found for 6+ months (lucky-find slot machine rewards).
+    Uses the older of date_found or created_at.
+    """
+    try:
+        items = get_items_collection()
+        cutoff = datetime.utcnow() - timedelta(days=180)  # 6 months
+        query = {
+            "status": "unclaimed",
+            "$expr": {"$lte": [{"$ifNull": ["$date_found", "$created_at"]}, cutoff]},
+        }
+        cursor = items.find(query).sort("date_found", 1).limit(limit)
+        results = []
+        for doc in cursor:
+            results.append(ItemResponse(
+                id=str(doc["_id"]),
+                item_name=doc.get("item_name", ""),
+                description=doc.get("description"),
+                category=doc.get("category", "other"),
+                status=doc.get("status", "unclaimed"),
+                date_found=doc.get("date_found"),
+                location_name=doc.get("location_name"),
+                location_description=doc.get("location_description"),
+                notes=doc.get("notes"),
+                image_url_clear=doc.get("image_url_clear"),
+                image_url_blurred=doc.get("image_url_blurred"),
+                image_urls=doc.get("image_urls"),
+                user_id=doc.get("user_id"),
+                contact_email=doc.get("contact_email"),
+                created_at=doc.get("created_at", datetime.utcnow()),
+            ))
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch archived items: {str(e)}")
 
 
 @router.get("/{item_id}", response_model=ItemResponse)

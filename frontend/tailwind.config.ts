@@ -28,8 +28,8 @@ const config: Config = {
         "cream": "#F5F1E1"
       },
       fontFamily: {
-        display: ["'Press Start 2P'", "cursive"],
-        handwriting: ["'VT323'", "monospace"],
+        display: ["ui-monospace", "SF Mono", "Cascadia Code", "monospace"],
+        handwriting: ["ui-monospace", "SF Mono", "monospace"],
       },
       backgroundImage: {
         'concordia-night': "linear-gradient(to bottom, #2E0F15 0%, #4A1A23 60%, #1A0508 100%)",

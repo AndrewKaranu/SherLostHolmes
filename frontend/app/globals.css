@@ -18,8 +18,8 @@
   --color-burgundy-dark: #5e1624;
   --color-cream: #F5F1E1;
 
-  --font-display: 'VT323', monospace;
-  --font-handwriting: 'VT323', monospace;
+  --font-display: ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
+  --font-handwriting: ui-monospace, 'Cascadia Code', monospace;
   
   --background-image-concordia-night: linear-gradient(to bottom, #2E0F15 0%, #4A1A23 60%, #1A0508 100%);
   --background-image-concordia-day: linear-gradient(to bottom, #F5F1E1 0%, #E6DBC4 100%);
@@ -31,9 +31,7 @@
   --shadow-inner-pixel: inset 3px 3px 0px 0px rgba(0,0,0,0.1);
   --shadow-glow: 0 0 10px #912338, 0 0 20px #912338;
   
-  /* Also register the custom font family if layout.tsx uses variable */
-  --font-vt323: var(--font-vt323);
-  --font-display: var(--font-vt323), monospace;
+  --font-vt323: ui-monospace, monospace;
 }
 
 .clip-ribbon {

@@ -18,24 +18,20 @@ export default function Home() {
   const [dbStatus, setDbStatus] = useState('Checking...');
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
 
+  const apiUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
+
   // 1. Test backend and database connection
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/api/data')
-      .then((res) => res.json())
-      .then((data) => setBackendMessage(data.data))
-      .catch((err) => {
-        console.error(err);
-        setBackendMessage('Error connecting to backend');
-      });
+    fetch(`${apiUrl}/api/data`)
+      .then((res) => res.ok ? res.json() : { data: 'Backend error' })
+      .then((data) => setBackendMessage(data?.data ?? 'Error connecting to backend'))
+      .catch(() => setBackendMessage('Error connecting to backend'));
 
-    fetch('http://127.0.0.1:8000/api/db-test')
-      .then((res) => res.json())
-      .then((data) => setDbStatus(data.message))
-      .catch((err) => {
-        console.error(err);
-        setDbStatus('Error connecting to database');
-      });
-  }, []);
+    fetch(`${apiUrl}/api/db-test`)
+      .then((res) => res.ok ? res.json() : { message: 'DB error' })
+      .then((data) => setDbStatus(data?.message ?? 'Error connecting to database'))
+      .catch(() => setDbStatus('Error connecting to database'));
+  }, [apiUrl]);
 
   // 2. Redirect to profile completion if student ID is missing
   useEffect(() => {
@@ -53,7 +49,7 @@ export default function Home() {
       const studentId = user.unsafeMetadata?.studentId as string | undefined;
       
       if (email && studentId) {
-        fetch(`http://127.0.0.1:8000/api/users/sync?clerk_id=${user.id}&email=${encodeURIComponent(email)}&student_id=${studentId}`, {
+        fetch(`${apiUrl}/api/users/sync?clerk_id=${user.id}&email=${encodeURIComponent(email)}&student_id=${studentId}`, {
           method: 'POST',
         })
           .then((res) => res.json())
@@ -67,7 +63,7 @@ export default function Home() {
           });
       }
     }
-  }, [isLoaded, isSignedIn, user]);
+  }, [isLoaded, isSignedIn, user, apiUrl]);
 
   return (
     <GameLayout>
