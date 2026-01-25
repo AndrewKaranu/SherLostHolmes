@@ -31,7 +31,8 @@ async def sync_user(clerk_id: str, email: str, student_id: Optional[str] = None)
         "email": email,
         "student_id": student_id,
         "role": "user",
-        "trust_rating": 5.0
+        "trust_rating": 5.0,
+        "spins": 3  # New users start with 3 free spins
     }
     
     result = users.insert_one(new_user)
@@ -82,3 +83,76 @@ async def update_role(clerk_id: str, role: str):
         raise HTTPException(status_code=404, detail="User not found")
     
     return {"status": "updated", "role": role}
+
+
+# ============== Spins Management ==============
+
+@router.get("/{clerk_id}/spins")
+async def get_user_spins(clerk_id: str):
+    """Get a user's current spin count."""
+    users = get_users_collection()
+    user = users.find_one({"clerk_id": clerk_id})
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {"clerk_id": clerk_id, "spins": user.get("spins", 0)}
+
+
+@router.post("/{clerk_id}/spins/use")
+async def use_spin(clerk_id: str):
+    """
+    Use one spin. Returns the new spin count.
+    Fails if user has no spins left.
+    """
+    users = get_users_collection()
+    user = users.find_one({"clerk_id": clerk_id})
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    current_spins = user.get("spins", 0)
+    
+    if current_spins <= 0:
+        raise HTTPException(status_code=400, detail="No spins remaining")
+    
+    result = users.update_one(
+        {"clerk_id": clerk_id},
+        {"$inc": {"spins": -1}}
+    )
+    
+    return {
+        "clerk_id": clerk_id,
+        "spins": current_spins - 1,
+        "message": "Spin used successfully"
+    }
+
+
+@router.post("/{clerk_id}/spins/add")
+async def add_spins(clerk_id: str, amount: int):
+    """
+    Add spins to a user's account.
+    Used when submitting items (5 spins) or when matching fails (2 spins).
+    """
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be positive")
+    
+    users = get_users_collection()
+    
+    result = users.update_one(
+        {"clerk_id": clerk_id},
+        {"$inc": {"spins": amount}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get updated count
+    user = users.find_one({"clerk_id": clerk_id})
+    
+    return {
+        "clerk_id": clerk_id,
+        "spins_added": amount,
+        "spins": user.get("spins", 0),
+        "message": f"Added {amount} spins"
+    }
