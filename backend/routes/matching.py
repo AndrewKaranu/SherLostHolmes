@@ -251,6 +251,18 @@ async def submit_bulk_intake(session_id: str, request: BulkIntakeRequest):
         
         # Check if we have any candidates
         if len(state.filtered_items) == 0:
+            # Award 2 consolation spins to user
+            if state.user_id:
+                try:
+                    from database import get_users_collection
+                    users = get_users_collection()
+                    users.update_one(
+                        {"clerk_id": state.user_id},
+                        {"$inc": {"spins": 2}}
+                    )
+                except Exception:
+                    pass  # Don't fail if spin award fails
+            
             return {
                 "session_id": session_id,
                 "stage": "complete",
@@ -259,7 +271,8 @@ async def submit_bulk_intake(session_id: str, request: BulkIntakeRequest):
                 "match_result": {
                     "score": 0,
                     "status": "rejected",
-                    "trust_score": 0
+                    "trust_score": 0,
+                    "spins_awarded": 2
                 }
             }
         
