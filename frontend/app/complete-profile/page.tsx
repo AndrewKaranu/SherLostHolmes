@@ -46,10 +46,15 @@ export default function CompleteProfilePage() {
         }
       });
 
-      // ...existing code...
-  // Sync to MongoDB
+      // Sync to MongoDB
       const email = user?.primaryEmailAddress?.emailAddress;
-      // ...existing code...
+      
+      if (email && user?.id) {
+        await fetch(
+          `http://127.0.0.1:8000/api/users/sync?clerk_id=${user.id}&email=${encodeURIComponent(email)}&student_id=${studentId.trim()}`,
+          { method: 'POST' }
+        );
+      }
       
       router.push('/');
     } catch (err) {
@@ -60,9 +65,12 @@ export default function CompleteProfilePage() {
     }
   };
 
+  if (!isLoaded) {
+    return <div className="bg-concordia-burgundy min-h-screen flex items-center justify-center text-parchment font-display animate-pulse">Loading Identity Protocol...</div>;
+  }
+
   return (
     <div className="bg-concordia-burgundy min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden font-display">
-        {/* Reuse the Auth Layout vibe inline or wrap if I refactored fully to component usage */}
         {/* Background Patterns */}
         <div className="absolute inset-0 wood-texture z-0"></div>
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none z-0 mix-blend-overlay"></div>
@@ -128,101 +136,6 @@ export default function CompleteProfilePage() {
              </button>
           </div>
         </div>
-    </div>
-  );
-}
-      if (email && user?.id) {
-        await fetch(
-          `http://127.0.0.1:8000/api/users/sync?clerk_id=${user.id}&email=${encodeURIComponent(email)}&student_id=${studentId.trim()}`,
-          { method: 'POST' }
-        );
-      }
-
-      router.push('/');
-    } catch (err) {
-      console.error('Failed to update profile:', err);
-      setError('Failed to save. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  if (!isLoaded) {
-    return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>;
-  }
-
-  return (
-    <div style={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      minHeight: 'calc(100vh - 80px)',
-      padding: '2rem'
-    }}>
-      <div style={{
-        width: '100%',
-        maxWidth: '400px',
-        padding: '2rem',
-        background: 'white',
-        borderRadius: '12px',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
-      }}>
-        <h2 style={{ margin: '0 0 0.5rem 0', textAlign: 'center' }}>Complete Your Profile</h2>
-        <p style={{ margin: '0 0 1.5rem 0', textAlign: 'center', color: '#666' }}>
-          Please enter your university student ID to continue
-        </p>
-
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '1rem' }}>
-            <label 
-              htmlFor="studentId" 
-              style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}
-            >
-              Student ID
-            </label>
-            <input
-              id="studentId"
-              type="text"
-              value={studentId}
-              onChange={(e) => setStudentId(e.target.value)}
-              placeholder="e.g., 40012345"
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                fontSize: '1rem',
-                border: '1px solid #ddd',
-                borderRadius: '6px',
-                boxSizing: 'border-box'
-              }}
-              disabled={isSubmitting}
-            />
-          </div>
-
-          {error && (
-            <p style={{ color: '#e53e3e', fontSize: '0.875rem', margin: '0 0 1rem 0' }}>
-              {error}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            style={{
-              width: '100%',
-              padding: '0.75rem',
-              fontSize: '1rem',
-              fontWeight: 600,
-              color: 'white',
-              background: isSubmitting ? '#999' : '#333',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: isSubmitting ? 'not-allowed' : 'pointer'
-            }}
-          >
-            {isSubmitting ? 'Saving...' : 'Continue'}
-          </button>
-        </form>
-      </div>
     </div>
   );
 }
