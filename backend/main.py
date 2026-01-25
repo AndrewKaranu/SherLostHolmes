@@ -7,6 +7,8 @@ from pydantic import BaseModel
 from database import get_database, test_connection, setup_indexes
 from routes.users import router as users_router
 from routes.images import router as images_router
+from routes.inquiries import router as inquiries_router
+from routes.items import router as items_router
 
 # AI imports (From main)
 from ai import get_sherlock_deduction, test_openrouter_connection
@@ -25,6 +27,8 @@ app.add_middleware(
 # Include routers
 app.include_router(users_router)
 app.include_router(images_router)
+app.include_router(inquiries_router)
+app.include_router(items_router)
 
 # Don't block startup with database operations
 # Indexes will be created on first db-test call

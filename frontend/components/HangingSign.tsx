@@ -8,9 +8,9 @@ interface HangingSignProps {
 
 export default function HangingSign({ icon, title, delay, href, onClick }: HangingSignProps) {
   const content = (
-    <div className="pixel-box bg-primary dark:bg-primary-dark border-primary-dark dark:border-black p-1 transition-transform group-hover:-translate-y-1 group-active:translate-y-1">
-      <div className="border-2 border-dashed border-accent-gold/40 dark:border-white/10 p-4 flex items-center justify-between bg-primary dark:bg-primary-dark">
-        <span className="material-symbols-outlined text-2xl text-background-light group-hover:text-accent-gold dark:group-hover:text-white">{icon}</span>
+    <div className="pixel-box bg-primary border-primary-dark p-1 transition-transform group-hover:-translate-y-1 group-active:translate-y-1">
+      <div className="border-2 border-dashed border-accent-gold/40 p-4 flex items-center justify-between bg-primary">
+        <span className="material-symbols-outlined text-2xl text-background-light group-hover:text-accent-gold">{icon}</span>
         <span className="text-xl md:text-2xl text-background-light uppercase tracking-wider group-hover:text-accent-gold transition-colors drop-shadow-md">{title}</span>
         <span className="material-symbols-outlined text-2xl text-background-light opacity-0 group-hover:opacity-100">arrow_forward</span>
       </div>

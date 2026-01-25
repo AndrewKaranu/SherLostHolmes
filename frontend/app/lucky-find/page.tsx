@@ -3,12 +3,8 @@
 import React from 'react';
 
 export default function LuckyFind() {
-  const toggleDarkMode = () => {
-    document.documentElement.classList.toggle('dark');
-  };
-
   return (
-    <div className="bg-background-light dark:bg-background-dark min-h-screen flex flex-col font-handwriting text-gray-800 dark:text-gray-200 transition-colors duration-300">
+    <div className="bg-background-light min-h-screen flex flex-col font-handwriting text-gray-800 transition-colors duration-300">
       <style jsx global>{`
         .pixel-border {
             border-style: solid;
@@ -63,8 +59,8 @@ export default function LuckyFind() {
       <main className="flex-grow flex flex-col items-center justify-center pt-24 pb-12 px-4 md:p-8 relative overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
         
         {/* Background Overlay */}
-        <div className="absolute inset-0 z-0 opacity-10 dark:opacity-20 pointer-events-none">
-            <div className="absolute inset-0 bg-concordia-day dark:bg-concordia-night -z-20"></div>
+        <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
+            <div className="absolute inset-0 bg-concordia-day -z-20"></div>
             <div className="absolute top-20 left-10 transform -rotate-12">
             <span className="material-icons text-9xl text-wood-dark opacity-10">fingerprint</span>
             </div>
@@ -75,7 +71,7 @@ export default function LuckyFind() {
 
         <div className="relative z-10 w-full max-w-4xl mx-auto flex flex-col items-center">
             <div className="text-center mb-8 bg-paper-light border-4 border-ink p-4 shadow-pixel-lg rotate-1">
-                <h2 className="font-display text-2xl md:text-3xl text-primary dark:text-primary-dark mb-2 uppercase tracking-wide">The Case of the Overdue Item</h2>
+                <h2 className="font-display text-2xl md:text-3xl text-primary mb-2 uppercase tracking-wide">The Case of the Overdue Item</h2>
                 <p className="max-w-xl mx-auto text-sm md:text-base text-gray-700 font-handwriting">
                     Unclaimed items from the Concordia Lost &amp; Found enter the archives after 90 days. 
                     Spin the lucky reels to give these forgotten artifacts a new home!
@@ -196,39 +192,39 @@ export default function LuckyFind() {
 
             {/* Recent Winners Section */}
             <div className="mt-12 w-full max-w-2xl">
-                <div className="bg-paper-light dark:bg-wood-dark border-4 border-ink rounded-sm p-6 shadow-pixel-lg relative">
+                <div className="bg-paper-light border-4 border-ink rounded-sm p-6 shadow-pixel-lg relative">
                     <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-ink text-paper-light px-4 py-1 font-display text-sm">
                         RECENT MYSTERIES SOLVED
                     </div>
-                    <ul className="space-y-3 font-handwriting text-lg md:text-xl text-ink dark:text-paper-light mt-4">
+                    <ul className="space-y-3 font-handwriting text-lg md:text-xl text-ink mt-4">
                         <li className="flex justify-between items-center border-b border-gray-400 border-dashed pb-1">
                             <span className="flex items-center gap-2">
                                 <span className="w-2 h-2 bg-green-500 rounded-full border border-black"></span>
                                 <span className="font-bold">@Watson_Jr</span> claimed:
                             </span>
-                            <span className="text-primary dark:text-accent-gold">Vintage Calculator</span>
+                            <span className="text-primary">Vintage Calculator</span>
                         </li>
                         <li className="flex justify-between items-center border-b border-gray-400 border-dashed pb-1">
                             <span className="flex items-center gap-2">
                                 <span className="w-2 h-2 bg-green-500 rounded-full border border-black"></span>
                                 <span className="font-bold">@MoriartyFan</span> claimed:
                             </span>
-                            <span className="text-primary dark:text-accent-gold">Left Airpod (Gen 2)</span>
+                            <span className="text-primary">Left Airpod (Gen 2)</span>
                         </li>
                         <li className="flex justify-between items-center">
                             <span className="flex items-center gap-2">
                                 <span className="w-2 h-2 bg-green-500 rounded-full border border-black"></span>
                                 <span className="font-bold">@SherlockH</span> claimed:
                             </span>
-                            <span className="text-primary dark:text-accent-gold">Beige Trenchcoat</span>
+                            <span className="text-primary">Beige Trenchcoat</span>
                         </li>
                     </ul>
                 </div>
                 
                 <div className="mt-4 text-center">
-                    <p className="font-handwriting text-sm text-gray-500 dark:text-gray-400">
+                    <p className="font-handwriting text-sm text-gray-500">
                         * Tokens are earned by reporting found items. 
-                        <a className="underline text-primary dark:text-accent-gold hover:text-red-500 ml-1" href="#">Learn more</a>
+                        <a className="underline text-primary hover:text-red-500 ml-1" href="#">Learn more</a>
                     </p>
                 </div>
             </div>
@@ -236,10 +232,10 @@ export default function LuckyFind() {
       </main>
 
       {/* Footer matching standard layout style */}
-      <footer className="w-full border-t-4 border-primary-dark dark:border-black bg-wood-dark text-white p-2 relative z-20">
+      <footer className="w-full border-t-4 border-primary-dark bg-wood-dark text-white p-2 relative z-20">
         <div className="container mx-auto flex flex-col md:flex-row justify-between items-center text-lg md:text-xl font-bold tracking-wide">
           <div className="flex items-center space-x-4 mb-2 md:mb-0">
-             <div className="flex items-center text-primary dark:text-red-400">
+             <div className="flex items-center text-primary">
                <span className="material-icons mr-1 text-base">local_police</span>
                <span>© 2023 SherlostHolmes</span>
              </div>
