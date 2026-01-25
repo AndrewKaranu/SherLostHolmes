@@ -61,48 +61,80 @@ def check_secret_knowledge_semantic(user_message: str, item_data: dict) -> Tuple
     """
     Use LLM to semantically check if user's message demonstrates knowledge of the item.
     Returns (is_match, confidence, reasoning).
+    
+    STRICT MODE: Only matches against ACTUALLY STORED item data.
     """
     llm = get_verification_llm()
     
-    # Extract item details
-    description = item_data.get("description", "")
-    unique_features = item_data.get("unique_features", "")
-    ai_data = item_data.get("ai_data", {})
-    persona = ai_data.get("persona_engine", {})
-    secret_knowledge = persona.get("secret_knowledge", unique_features)
-    color = item_data.get("color", "")
-    brand = item_data.get("brand", "")
-    category = item_data.get("category", "")
+    # Extract ONLY the actual stored item details - nothing fabricated
+    description = item_data.get("description", "") or ""
+    unique_features = item_data.get("unique_features", "") or ""
+    ai_data = item_data.get("ai_data", {}) or {}
+    persona = ai_data.get("persona_engine", {}) or {}
+    # Secret knowledge should ONLY be the unique_features or what's explicitly stored
+    secret_knowledge = unique_features if unique_features else persona.get("secret_knowledge", "")
+    color = item_data.get("color", "") or ""
+    brand = item_data.get("brand", "") or ""
+    category = item_data.get("category", "") or ""
     
-    prompt = f"""You are a verification assistant. Determine if the user's message demonstrates genuine knowledge of this lost item.
+    # Build a strict list of verifiable facts
+    verifiable_facts = []
+    if description:
+        verifiable_facts.append(f"Description: {description}")
+    if unique_features:
+        verifiable_facts.append(f"Unique Features: {unique_features}")
+    if color:
+        verifiable_facts.append(f"Color: {color}")
+    if brand:
+        verifiable_facts.append(f"Brand: {brand}")
+    if category:
+        verifiable_facts.append(f"Category: {category}")
+    
+    if not verifiable_facts:
+        return False, 0.0, "No verifiable item data available"
+    
+    facts_str = "\n".join(f"- {fact}" for fact in verifiable_facts)
+    
+    # Log what we're verifying against to help debug
+    print(f"[SEMANTIC CHECK] Verifying user message against ACTUAL stored data:")
+    print(f"  User said: '{user_message[:100]}...'")
+    print(f"  Stored facts: {verifiable_facts}")
+    
+    prompt = f"""You are a STRICT verification assistant. Determine if the user's message demonstrates knowledge that matches the ACTUAL stored item data below.
 
-ITEM DETAILS:
-- Category: {category}
-- Description: {description}
-- Color: {color}
-- Brand: {brand}
-- Unique Features/Secret Knowledge: {secret_knowledge}
+=== ACTUAL STORED ITEM DATA (ONLY USE THIS) ===
+{facts_str}
 
-USER'S MESSAGE:
+=== USER'S CLAIM ===
 "{user_message}"
 
-INSTRUCTIONS:
-1. Check if the user mentions or describes features that match the item
-2. Be GENEROUS - accept paraphrasing, similar descriptions, or close matches
-3. The user doesn't need to use exact words - semantic meaning matters
-4. If they describe the same feature in different words, that COUNTS as a match
-5. Partial matches are still positive signals
+=== STRICT VERIFICATION RULES ===
+1. ONLY verify against the actual stored data above - do NOT invent or assume additional features
+2. The user's description must reasonably match something in the stored data
+3. Accept semantic equivalents (e.g., "crimson" = "red", "laptop computer" = "laptop")
+4. Accept partial matches if they correctly identify stored features
+5. Do NOT give credit for generic descriptions that could apply to any item
+6. If the stored data is vague, be MORE lenient with the user's description
+
+=== WHAT COUNTS AS A MATCH ===
+- User mentions a color that matches or is similar to the stored color
+- User mentions a brand that matches the stored brand
+- User describes features that match the unique features or description
+- User correctly identifies the category/type of item
+
+=== WHAT DOES NOT COUNT ===
+- Generic statements like "it's mine" or "I lost it"
+- Features NOT mentioned in the stored data (don't assume)
+- Vague descriptions that could match anything
 
 Respond in this exact JSON format:
 {{
     "is_match": true/false,
     "confidence": 0.0 to 1.0,
-    "reasoning": "brief explanation",
-    "matched_features": ["list of features they correctly identified"],
-    "should_verify": true/false (true if confidence > 0.5)
-}}
-
-Be generous in matching - if they're describing something that could reasonably be the same thing, count it as a match."""
+    "reasoning": "quote the SPECIFIC stored data that matched",
+    "matched_features": ["list only features that exist in stored data"],
+    "should_verify": true/false (true if confidence >= 0.4)
+}}"""
 
     try:
         response = llm.invoke([HumanMessage(content=prompt)])
@@ -192,50 +224,57 @@ class InterrogationSession:
         character_name = self.persona.get("character_name", "The Item")
         archetype = self.persona.get("archetype", "The Mysterious One")
         secret_knowledge = self.persona.get("secret_knowledge", "a unique identifying feature")
-        system_instruction = self.persona.get("system_instruction", "")
         
-        # Get actual item details for context
-        item_description = self.item.get("description", "No description available")
-        item_color = self.item.get("color", "unknown")
-        item_brand = self.item.get("brand", "unknown")
-        item_category = self.item.get("category", "item")
-        item_unique_features = self.item.get("unique_features", secret_knowledge)
-        item_location = self.item.get("location_name", "unknown location")
+        # Get actual item details for context - ONLY use what's actually stored
+        item_description = self.item.get("description") or "No description available"
+        item_color = self.item.get("color") or "unknown"
+        item_brand = self.item.get("brand") or "unknown"
+        item_category = self.item.get("category") or "item"
+        item_unique_features = self.item.get("unique_features") or secret_knowledge or "no specific features recorded"
+        item_location = self.item.get("location_name") or "unknown location"
+        
+        # Log what data we're actually using (helps debug hallucination issues)
+        print(f"[INTERROGATION] Building prompt with ACTUAL stored data:")
+        print(f"  - Description: {item_description[:100]}...")
+        print(f"  - Color: {item_color}")
+        print(f"  - Brand: {item_brand}")
+        print(f"  - Unique Features: {item_unique_features[:100] if item_unique_features else 'None'}...")
         
         # Build comprehensive system prompt with item context
+        # CRITICAL: Only include ACTUALLY STORED data to prevent hallucination
         base_prompt = f"""You are {character_name}, a lost {item_category} with the personality of {archetype}.
 
-=== YOUR TRUE IDENTITY (What you actually are) ===
+=== YOUR TRUE IDENTITY (ONLY THESE FACTS ARE TRUE) ===
 - Category: {item_category}
 - Description: {item_description}
 - Color: {item_color}
 - Brand: {item_brand}
 - Location Found: {item_location}
-- Secret/Unique Features: {item_unique_features}
+- Unique Features: {item_unique_features}
+
+=== CRITICAL ANTI-HALLUCINATION RULES ===
+1. You ONLY know the facts listed above. Do NOT invent additional details.
+2. If asked about something not in your data, say you don't remember or aren't sure.
+3. NEVER claim to have features, marks, stickers, or details that aren't listed above.
+4. If your unique features field is vague, keep your questions vague too.
+5. DO NOT make up specific scratches, stickers, marks, or details.
 
 === VERIFICATION RULES ===
-Someone claims to be your owner. Use the information above to verify if they really know you.
+Someone claims to be your owner. ONLY verify against the ACTUAL data above.
 
-CRITICAL: When the user describes something that MATCHES or is SIMILAR to your actual details above, you should:
+When the user describes something that MATCHES your actual details:
 1. Acknowledge they got it right (in character)
 2. Become more trusting and warm
-3. If they correctly identify your secret/unique features, be JOYFUL and move toward verification
+3. Move toward photo verification
 
-DO NOT keep asking questions endlessly if they've already demonstrated knowledge. 
-If they describe your color, brand, features, or unique marks correctly - ACCEPT IT.
+DO NOT keep asking questions endlessly if they've demonstrated knowledge.
 
 === PERSONALITY ===
 - Stay in character as {archetype}
-- Start suspicious, but warm up quickly when they show real knowledge
-- If they describe you correctly, express recognition and joy
-- Keep responses relatively short (2-3 sentences max)
-- After 2-3 correct details, move to photo verification
-
-=== WHAT COUNTS AS "CORRECT" ===
-- Exact matches to your description
-- Close paraphrases (e.g., "red" for "crimson")
-- Partial descriptions that are accurate
-- Any mention of your unique features/secret knowledge
+- Start curious, warm up when they show real knowledge
+- Keep responses short (2-3 sentences max)
+- After correct details, ask for photo verification
+- DO NOT invent new "tests" or "secret features" beyond your stored data
 
 === CURRENT SESSION STATE ===
 - Trust Score: {self.trust_score}/100

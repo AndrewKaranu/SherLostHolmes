@@ -1,39 +1,355 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useUser } from '@clerk/nextjs';
+
+const SYMBOLS = [
+  { id: 'violin', emoji: '🎻', label: 'VIOLIN' },
+  { id: 'notes', emoji: '📜', label: 'NOTES' },
+  { id: 'key', emoji: '🗝️', label: 'KEY' },
+];
+
+const SPIN_DURATION_MS = 3000;
+const REEL_REVEAL_MS = [800, 1600, 2400];
+const WIN_CHANCE = 0.25;
+
+type ArchivedItem = {
+  id: string;
+  item_name: string;
+  description?: string;
+  category: string;
+  location_name?: string;
+  date_found?: string;
+};
 
 export default function LuckyFind() {
+  const { user, isLoaded } = useUser();
+  const [spinning, setSpinning] = useState(false);
+  const [reels, setReels] = useState<number[]>([0, 0, 0]);
+  const [revealed, setRevealed] = useState<number>(0);
+  const [reward, setReward] = useState<ArchivedItem | null>(null);
+  const [showRewardModal, setShowRewardModal] = useState(false);
+  const [loseMessage, setLoseMessage] = useState<string | null>(null);
+  const [isWin, setIsWin] = useState(false);
+  const [spins, setSpins] = useState<number | null>(null);
+  const [loadingSpins, setLoadingSpins] = useState(true);
+  const [leverPulled, setLeverPulled] = useState(false);
+  const [reelOffsets, setReelOffsets] = useState<number[]>([0, 0, 0]);
+  
+  const timeoutRefs = useRef<NodeJS.Timeout[]>([]);
+  const apiUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
+
+  // Fetch user's spin count
+  const fetchSpins = useCallback(async () => {
+    if (!user?.id) {
+      setSpins(null);
+      setLoadingSpins(false);
+      return;
+    }
+    
+    try {
+      const res = await fetch(`${apiUrl}/api/users/${user.id}/spins`);
+      if (res.ok) {
+        const data = await res.json();
+        setSpins(data.spins ?? 0);
+      } else if (res.status === 404) {
+        // User not synced yet, they have 0 spins
+        setSpins(0);
+      }
+    } catch {
+      setSpins(0);
+    } finally {
+      setLoadingSpins(false);
+    }
+  }, [user?.id, apiUrl]);
+
+  // Use a spin
+  const useSpin = useCallback(async (): Promise<boolean> => {
+    if (!user?.id) return false;
+    
+    try {
+      const res = await fetch(`${apiUrl}/api/users/${user.id}/spins/use`, {
+        method: 'POST',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSpins(data.spins);
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }, [user?.id, apiUrl]);
+
+  useEffect(() => {
+    if (isLoaded) {
+      fetchSpins();
+    }
+  }, [isLoaded, fetchSpins]);
+
+  useEffect(() => {
+    return () => {
+      timeoutRefs.current.forEach(clearTimeout);
+    };
+  }, []);
+
+  const clearAllTimeouts = useCallback(() => {
+    timeoutRefs.current.forEach(clearTimeout);
+    timeoutRefs.current = [];
+  }, []);
+
+  const pickRandomArchivedItem = useCallback(async (): Promise<ArchivedItem | null> => {
+    try {
+      const res = await fetch(`${apiUrl}/api/items/archived`);
+      if (!res.ok) return null;
+      const data: ArchivedItem[] = await res.json();
+      if (!data?.length) return null;
+      return data[Math.floor(Math.random() * data.length)] ?? null;
+    } catch {
+      return null;
+    }
+  }, [apiUrl]);
+
+  const claimItem = useCallback(async (itemId: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`${apiUrl}/api/items/archived/${itemId}/claim`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }, [apiUrl]);
+
+  const spin = useCallback(async () => {
+    if (spinning) return;
+    
+    // Check if user has spins
+    if (spins !== null && spins <= 0) {
+      setLoseMessage('No spins remaining! Report a found item to earn more.');
+      return;
+    }
+    
+    // Use a spin (if logged in)
+    if (user?.id) {
+      const used = await useSpin();
+      if (!used) {
+        setLoseMessage('Failed to use spin. Please try again.');
+        return;
+      }
+    }
+    
+    clearAllTimeouts();
+    setSpinning(true);
+    setLoseMessage(null);
+    setReward(null);
+    setShowRewardModal(false);
+    setRevealed(0);
+    setIsWin(false);
+
+    const won = Math.random() < WIN_CHANCE;
+    const sym = Math.floor(Math.random() * SYMBOLS.length);
+    const final: number[] = won 
+      ? [sym, sym, sym] 
+      : [
+          Math.floor(Math.random() * SYMBOLS.length),
+          Math.floor(Math.random() * SYMBOLS.length),
+          Math.floor(Math.random() * SYMBOLS.length),
+        ];
+    
+    setReels(final);
+    setIsWin(won);
+
+    REEL_REVEAL_MS.forEach((ms, i) => {
+      const timeout = setTimeout(() => {
+        setRevealed(i + 1);
+      }, ms);
+      timeoutRefs.current.push(timeout);
+    });
+
+    const finalTimeout = setTimeout(async () => {
+      setSpinning(false);
+      // Check if all three reels actually match (regardless of initial win chance)
+      const actualWin = final[0] === final[1] && final[1] === final[2];
+      console.log('Spin complete:', { actualWin, reels: final });
+      if (actualWin) {
+        setIsWin(true);
+        // Show modal immediately
+        setShowRewardModal(true);
+        console.log('Win detected! Showing modal...');
+        // Fetch reward in background (non-blocking)
+        pickRandomArchivedItem().then(async (item) => {
+          console.log('Reward fetched:', item);
+          if (item) {
+            // Claim the item
+            const claimed = await claimItem(item.id);
+            console.log('Item claim result:', claimed);
+          }
+          setReward(item ?? null);
+        }).catch((err) => {
+          console.error('Failed to fetch reward:', err);
+          setReward(null);
+        });
+      } else {
+        setLoseMessage('No match — try again!');
+        setIsWin(false);
+      }
+    }, SPIN_DURATION_MS);
+    timeoutRefs.current.push(finalTimeout);
+  }, [spinning, spins, user?.id, useSpin, pickRandomArchivedItem, claimItem, clearAllTimeouts]);
+
   return (
-    <div className="bg-background-light min-h-screen flex flex-col font-handwriting text-gray-800 transition-colors duration-300">
+    <div className="bg-background-light min-h-screen flex flex-col font-handwriting text-gray-800">
       <style jsx global>{`
-        .pixel-border {
-            border-style: solid;
-            border-width: 4px;
+        @keyframes reelSpin {
+          0% { transform: translateY(0); }
+          100% { transform: translateY(-300px); }
         }
-        .pixel-text {
-            text-shadow: 2px 2px 0px rgba(0,0,0,0.3);
+        
+        @keyframes reelSpinFast {
+          0% { transform: translateY(0); }
+          100% { transform: translateY(-600px); }
         }
-        .scanlines {
-            background: linear-gradient(
-                to bottom,
-                rgba(255,255,255,0),
-                rgba(255,255,255,0) 50%,
-                rgba(0,0,0,0.1) 50%,
-                rgba(0,0,0,0.1)
-            );
-            background-size: 100% 4px;
+        
+        @keyframes symbolReveal {
+          0% { 
+            transform: scale(0.8);
+            opacity: 0.5;
+          }
+          50% {
+            transform: scale(1.1);
+          }
+          100% { 
+            transform: scale(1);
+            opacity: 1;
+          }
         }
-        .bulb-glow {
-            box-shadow: 0 0 15px 5px rgba(255, 215, 0, 0.6);
+        
+        @keyframes winGlow {
+          0%, 100% { 
+            box-shadow: 0 0 15px rgba(197, 179, 88, 0.4),
+                        inset 0 0 10px rgba(197, 179, 88, 0.2);
+          }
+          50% { 
+            box-shadow: 0 0 25px rgba(197, 179, 88, 0.7),
+                        inset 0 0 15px rgba(197, 179, 88, 0.4);
+          }
         }
-        /* Override primary color to match app */
-        :root {
-            --color-primary: #912338;
-            --color-primary-dark: #631726;
+        
+        @keyframes loseShake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-4px); }
+          75% { transform: translateX(4px); }
+        }
+        
+        @keyframes leverPull {
+          0% { transform: rotate(0deg); }
+          30% { transform: rotate(45deg); }
+          100% { transform: rotate(0deg); }
+        }
+        
+        @keyframes leverBallBounce {
+          0% { transform: scale(1); }
+          30% { transform: scale(0.9); }
+          60% { transform: scale(1.1); }
+          100% { transform: scale(1); }
+        }
+        
+        .reel-spinning-0 {
+          animation: reelSpin 0.15s linear infinite;
+        }
+        
+        .reel-spinning-1 {
+          animation: reelSpin 0.12s linear infinite;
+        }
+        
+        .reel-spinning-2 {
+          animation: reelSpin 0.1s linear infinite;
+        }
+        
+        .reel-stopping {
+          animation: none;
+          transition: transform 0.5s cubic-bezier(0.17, 0.67, 0.35, 1.2);
+        }
+        
+        .reel-reveal {
+          animation: symbolReveal 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        
+        .reel-win {
+          animation: winGlow 1.5s ease-in-out infinite;
+        }
+        
+        .lose-shake {
+          animation: loseShake 0.4s ease-in-out;
+        }
+        
+        .lever-pulled {
+          animation: leverPull 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        
+        .lever-ball-bounce {
+          animation: leverBallBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        }
+        
+        .wood-texture {
+          background: 
+            linear-gradient(to bottom, #4a2c1a 0%, #3d2415 50%, #2d1a0f 100%),
+            url('https://www.transparenttextures.com/patterns/wood-pattern.png');
+          background-blend-mode: overlay;
+          background-size: 100% 100%, 250px 250px;
+          background-repeat: no-repeat, repeat;
+          background-position: center, top left;
+          position: relative;
+        }
+        
+        .wood-texture::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: url('https://www.transparenttextures.com/patterns/wood-pattern.png');
+          background-size: 250px 250px;
+          background-repeat: repeat;
+          opacity: 0.6;
+          mix-blend-mode: overlay;
+          pointer-events: none;
+          z-index: 1;
+        }
+        
+        .wood-texture-dark {
+          background: 
+            linear-gradient(to bottom, #2d1a0f 0%, #25150b 50%, #1d1009 100%),
+            url('https://www.transparenttextures.com/patterns/wood-pattern.png');
+          background-blend-mode: multiply;
+          background-size: 100% 100%, 250px 250px;
+          background-repeat: no-repeat, repeat;
+          background-position: center, top left;
+          position: relative;
+        }
+        
+        .wood-texture-dark::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: url('https://www.transparenttextures.com/patterns/wood-pattern.png');
+          background-size: 250px 250px;
+          background-repeat: repeat;
+          opacity: 0.7;
+          mix-blend-mode: multiply;
+          pointer-events: none;
+          z-index: 1;
         }
       `}</style>
 
-      {/* Navbar matching Evidence Board */}
       <nav className="fixed top-0 w-full z-50 px-4 py-3 pointer-events-none">
         <div className="max-w-7xl mx-auto flex justify-between items-start pointer-events-auto">
           <div className="bg-wood-dark border-4 border-ink p-2 shadow-pixel text-paper-light flex items-center gap-4">
@@ -45,205 +361,343 @@ export default function LuckyFind() {
               </div>
             </div>
           </div>
-          <div className="flex gap-4">
-            <button className="bg-wood-dark border-4 border-ink p-2 shadow-pixel text-paper-light hover:translate-y-1 hover:shadow-none transition-transform active:bg-primary-dark">
-              <span className="material-icons">settings</span>
-            </button>
-            <button className="bg-wood-dark border-4 border-ink p-2 shadow-pixel text-paper-light hover:translate-y-1 hover:shadow-none transition-transform active:bg-primary-dark">
-              <span className="material-icons">inventory_2</span>
-            </button>
+          
+          {/* Spins Counter */}
+          <div className="bg-wood-dark border-4 border-ink p-2 shadow-pixel text-paper-light flex items-center gap-3">
+            <div className="flex flex-col items-center">
+              <span className="font-display text-xs text-accent-gold mb-1">SPINS</span>
+              <div className="flex items-center gap-2 text-2xl leading-none font-display">
+                <span className="material-icons text-accent-gold text-base">autorenew</span>
+                {loadingSpins ? (
+                  <span className="animate-pulse">...</span>
+                ) : !user ? (
+                  <span className="text-sm">Sign in</span>
+                ) : (
+                  <span className={spins === 0 ? 'text-red-400' : 'text-green-400'}>{spins}</span>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </nav>
 
-      <main className="flex-grow flex flex-col items-center justify-center pt-24 pb-12 px-4 md:p-8 relative overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
-        
-        {/* Background Overlay */}
-        <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
-            <div className="absolute inset-0 bg-concordia-day -z-20"></div>
-            <div className="absolute top-20 left-10 transform -rotate-12">
-            <span className="material-icons text-9xl text-wood-dark opacity-10">fingerprint</span>
+      <main className="flex-grow flex flex-col items-center justify-center pt-24 pb-12 px-4 md:p-8 relative">
+        <div className="relative z-10 w-full max-w-3xl mx-auto flex flex-col items-center">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h2 className="font-display text-3xl md:text-4xl text-primary mb-3 uppercase tracking-wider">
+              The Case of the Overdue Item
+            </h2>
+            <p className="text-gray-600 font-handwriting text-lg max-w-xl mx-auto">
+              Unclaimed items enter the archives after 6 months. Spin to claim a forgotten artifact.
+            </p>
+          </div>
+
+          {/* Lose Message */}
+          {loseMessage && (
+            <div className="mb-6 bg-amber-50 border-2 border-amber-400 text-amber-900 px-6 py-3 rounded font-display text-sm lose-shake">
+              {loseMessage}
             </div>
-            <div className="absolute bottom-20 right-10 transform rotate-12">
-            <span className="material-icons text-9xl text-wood-dark opacity-10">policy</span>
-            </div>
-        </div>
+          )}
 
-        <div className="relative z-10 w-full max-w-4xl mx-auto flex flex-col items-center">
-            <div className="text-center mb-8 bg-paper-light border-4 border-ink p-4 shadow-pixel-lg rotate-1">
-                <h2 className="font-display text-2xl md:text-3xl text-primary mb-2 uppercase tracking-wide">The Case of the Overdue Item</h2>
-                <p className="max-w-xl mx-auto text-sm md:text-base text-gray-700 font-handwriting">
-                    Unclaimed items from the Concordia Lost &amp; Found enter the archives after 90 days. 
-                    Spin the lucky reels to give these forgotten artifacts a new home!
-                </p>
-            </div>
+          {/* Slot Machine with Lever */}
+          <div className="w-full max-w-3xl flex justify-center items-stretch gap-4">
+            {/* Main Slot Machine */}
+            <div className="flex-grow max-w-2xl">
+              {/* Dark Brown Wooden Frame */}
+              <div className="wood-texture border-8 border-[#5d4037] rounded-lg shadow-2xl p-6 md:p-8 relative" style={{ boxShadow: '0 10px 40px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,0,0,0.3)', zIndex: 1 }}>
 
-            <div className="relative flex items-end justify-center perspective-1000">
-                {/* Slot Machine Body - Sherlock Edition */}
-                <div className="bg-gradient-to-b from-[#2c1e14] via-[#4e342e] to-[#1a0f0a] border-[8px] border-[#2d1b12] rounded-t-3xl rounded-b-lg shadow-[0_20px_50px_rgba(0,0,0,0.7)] w-[340px] md:w-[500px] flex flex-col items-center relative z-20 overflow-visible bg-[url('https://www.transparenttextures.com/patterns/black-scales.png')]">
-                    
-                    {/* Decorative Top Crest - Detective Hat */}
-                    <div className="absolute -top-16 w-48 h-18 bg-[#1a0f0a] rounded-t-full border-8 border-double border-[#8d6e63] z-0 flex items-center justify-center shadow-lg pt-2">
-                        <span className="text-5xl filter drop-shadow-md opacity-90">🕵️</span>
-                    </div>
-
-                    {/* Lights Top - Gaslight Style */}
-                    <div className="absolute -top-3 w-full flex justify-center gap-4 md:gap-8 px-8 z-10">
-                        <div className="w-6 h-6 rounded-full bg-amber-600 border-2 border-[#544] shadow-[0_0_15px_rgba(255,140,0,0.8)] animate-pulse"></div>
-                        <div className="w-6 h-6 rounded-full bg-yellow-100 border-2 border-[#544] shadow-[0_0_15px_rgba(255,255,200,0.6)]"></div>
-                        <div className="w-6 h-6 rounded-full bg-amber-600 border-2 border-[#544] shadow-[0_0_15px_rgba(255,140,0,0.8)] animate-pulse"></div>
-                        <div className="w-6 h-6 rounded-full bg-yellow-100 border-2 border-[#544] shadow-[0_0_15px_rgba(255,255,200,0.6)]"></div>
-                        <div className="w-6 h-6 rounded-full bg-amber-600 border-2 border-[#544] shadow-[0_0_15px_rgba(255,140,0,0.8)] animate-pulse"></div>
-                    </div>
-
-                    {/* Title Plate */}
-                    <div className="mt-10 mb-6 bg-[#0f0a08] border-4 border-[#8d6e63] px-6 py-2 transform -skew-x-6 shadow-[0_4px_0_rgba(0,0,0,0.5)] relative group">
-                        <div className="absolute inset-0 bg-yellow-900/10 skew-x-12 animate-pulse"></div>
-                        <h3 className="font-display text-2xl md:text-3xl text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-100 to-amber-200 text-center tracking-widest drop-shadow-sm font-serif">
-                            THE GAME IS AFOOT
-                        </h3>
-                    </div>
-
-                    {/* Reel Window Frame - Brass & Leather */}
-                    <div className="bg-gradient-to-br from-[#8d6e63] via-[#bcaaa4] to-[#5d4037] p-2 rounded-lg shadow-xl mb-6 w-11/12 relative">
-                        {/* Metallic Glare on Frame */}
-                        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent pointer-events-none rounded-lg z-10"></div>
-                        
-                        <div className="bg-[#1a120b] p-4 md:p-6 rounded border-4 border-[#3e2723] inset-shadow-lg relative overflow-hidden">
-                            
-                            {/* Glass Reflection Overlay */}
-                            <div className="absolute top-0 right-0 w-full h-1/3 bg-gradient-to-b from-white/5 to-transparent pointer-events-none z-30 transform skew-y-3"></div>
-                            <div className="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-white/5 to-transparent pointer-events-none z-30 transform -skew-y-3"></div>
-
-                            {/* Payline - Magnifying Glass Style */}
-                            <div className="absolute top-1/2 left-0 w-full h-0.5 bg-red-800/80 z-40 pointer-events-none shadow-[0_0_5px_rgba(255,0,0,0.5)]"></div>
-                            <div className="absolute top-1/2 -left-4 transform -translate-y-1/2 z-50 text-2xl text-amber-500">🔍</div>
-                            <div className="absolute top-1/2 -right-4 transform -translate-y-1/2 z-50 text-2xl text-amber-500 scale-x-[-1]">🔍</div>
-                            
-                            <div className="flex gap-2 md:gap-4 justify-center">
-                                {/* Reel 1 - Parchment Style */}
-                                <div className="bg-[#e8e4c9] opacity-90 border-x-2 border-[#5d4037] w-20 h-28 md:w-32 md:h-40 overflow-hidden relative rounded-sm shadow-[inset_0_0_20px_rgba(62,39,35,0.6)]">
-                                    <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/aged-paper.png')] opacity-50 z-0"></div>
-                                    <div className="flex flex-col items-center justify-center h-full animate-bounce relative z-10">
-                                        <span className="text-4xl md:text-6xl filter drop-shadow-sm sepia">🎻</span>
-                                        <span className="font-display text-xs text-[#3e2723] mt-2 font-bold tracking-widest font-serif">VIOLIN</span>
-                                    </div>
-                                </div>
-                                {/* Reel 2 - Parchment Style */}
-                                <div className="bg-[#e8e4c9] opacity-90 border-x-2 border-[#5d4037] w-20 h-28 md:w-32 md:h-40 overflow-hidden relative rounded-sm shadow-[inset_0_0_20px_rgba(62,39,35,0.6)]">
-                                    <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/aged-paper.png')] opacity-50 z-0"></div>
-                                    <div className="flex flex-col items-center justify-center h-full relative z-10">
-                                        <span className="text-4xl md:text-6xl filter drop-shadow-sm sepia">📜</span>
-                                        <span className="font-display text-xs text-[#3e2723] mt-2 font-bold tracking-widest font-serif">NOTES</span>
-                                    </div>
-                                </div>
-                                {/* Reel 3 - Parchment Style */}
-                                <div className="bg-[#e8e4c9] opacity-90 border-x-2 border-[#5d4037] w-20 h-28 md:w-32 md:h-40 overflow-hidden relative rounded-sm shadow-[inset_0_0_20px_rgba(62,39,35,0.6)]">
-                                    <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/aged-paper.png')] opacity-50 z-0"></div>
-                                    <div className="flex flex-col items-center justify-center h-full animate-bounce relative z-10">
-                                        <span className="text-4xl md:text-6xl filter drop-shadow-sm grayscale contrast-125">🗝️</span>
-                                        <span className="font-display text-xs text-[#3e2723] mt-2 font-bold tracking-widest font-serif">KEY</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Control Panel - Wood & Brass */}
-                    <div className="w-full bg-[#1a0f0a] h-36 md:h-44 flex flex-col items-center justify-end pb-6 border-t-[6px] border-[#8d6e63] relative rounded-b-lg shadow-inner bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')]">
-                        
-                        {/* Coin Slot */}
-                        <div className="absolute top-6 right-8 flex flex-col items-center z-10">
-                            <div className="w-10 h-10 bg-gradient-to-br from-[#d7ccc8] to-[#8d6e63] rounded-full shadow-lg flex justify-center items-center border border-[#3e2723]">
-                                <div className="w-1 h-6 bg-[#2d1b12] shadow-inner"></div>
-                            </div>
-                            <span className="font-display text-[#d7ccc8] text-[10px] mt-1 tracking-widest text-shadow uppercase font-serif">Insert<br/>Shilling</span>
-                        </div>
-                        
-                        {/* Spin Button */}
-                        <div className="relative group w-1/2 z-10">
-                            <div className="absolute inset-x-0 bottom-0 h-full bg-[#2e1915] rounded-xl transform translate-y-2 translate-x-1 shadow-lg"></div>
-                            <button className="relative w-full bg-gradient-to-b from-[#912338] via-[#701c2a] to-[#4a121c] hover:from-[#a62840] hover:to-[#5e1723] active:translate-y-2 transition-all border-2 border-[#3e2723] text-[#e0e0e0] font-display text-xl md:text-2xl px-6 py-4 rounded-xl shadow-[inset_0_2px_5px_rgba(0,0,0,0.5)] active:shadow-none tracking-[0.1em] text-shadow border-b-8 border-b-[#2e1915] active:border-b-0 font-serif">
-                                INVESTIGATE
-                            </button>
-                        </div>
-                        
-                        {/* Coin Tray */}
-                        <div className="mt-6 w-3/4 h-8 bg-[#2d1b12] border-x-2 border-b-2 border-[#1a0f0a] rounded-b-xl shadow-inner flex items-center justify-center overflow-hidden z-10 relative">
-                             {/* Scattered Coins - Silver/Gold */}
-                             <div className="w-4 h-4 rounded-full bg-[#cfd8dc] border border-gray-400 shadow-sm absolute left-4 top-2 transform rotate-45"></div>
-                             <div className="w-5 h-5 rounded-full bg-[#ffd700] border border-yellow-600 opacity-60 shadow-sm absolute right-12 top-1 transform -rotate-12"></div>
-                        </div>
-                    </div>
+                {/* Title Banner */}
+                <div className="text-center mb-6 mt-2">
+                  <div className="wood-texture-dark border-2 border-[#8d6e63] px-6 py-2 inline-block" style={{ boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.4)', position: 'relative', zIndex: 2 }}>
+                    <h3 className="font-display text-xl md:text-2xl text-accent-gold tracking-widest relative z-10">
+                      THE GAME IS AFOOT
+                    </h3>
+                  </div>
                 </div>
 
-                {/* Lever Arm - Walking Stick Style */}
-                <div className="hidden md:flex flex-col items-center justify-end h-[400px] ml-[-10px] relative z-10 transform translate-y-10 group cursor-pointer perspective-500">
-                    <div className="w-16 h-16 bg-gradient-to-br from-[#5d4037] to-[#2d1b12] rounded-full border-4 border-[#3e2723] shadow-[5px_5px_10px_rgba(0,0,0,0.6)] group-hover:scale-110 transition-transform z-20 relative top-2 group-active:top-[150px] transition-all duration-300">
-                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')] opacity-50 rounded-full"></div>
-                        <div className="absolute top-3 left-3 w-4 h-4 bg-white/10 rounded-full filter blur-sm"></div>
-                    </div>
-                    <div className="w-4 h-40 bg-gradient-to-r from-[#d7ccc8] via-white to-[#a1887f] border-x border-[#5d4037] z-10 relative -top-2 group-active:h-10 transition-all duration-300 origin-bottom shadow-lg"></div>
-                    <div className="w-12 h-20 bg-gradient-to-b from-[#8d6e63] to-[#4e342e] border-2 border-[#2d1b12] rounded-r-2xl shadow-xl flex items-center justify-center -ml-2">
-                        <div className="w-6 h-6 bg-[#2d1b12] rounded-full opacity-60 shadow-inner"></div>
-                    </div>
+                {/* Reels Container */}
+                <div className="wood-texture-dark border-4 border-[#6b4e37] rounded p-4 md:p-6 mb-6 relative" style={{ boxShadow: 'inset 0 0 30px rgba(0,0,0,0.5)', position: 'relative', zIndex: 2 }}>
+                  {/* Reels */}
+                  <div className="flex gap-3 md:gap-6 justify-center items-center">
+                    {[0, 1, 2].map((reelIndex) => {
+                      const isReelSpinning = spinning && revealed <= reelIndex;
+                      const isReelStopped = !spinning || revealed > reelIndex;
+                      const symbolHeight = 100; // Height of each symbol in px
+                      const targetSymbol = reels[reelIndex];
+                      
+                      // Create an extended symbol array for smooth spinning
+                      const extendedSymbols = [...SYMBOLS, ...SYMBOLS, ...SYMBOLS, ...SYMBOLS, ...SYMBOLS];
+                      
+                      return (
+                        <div
+                          key={reelIndex}
+                          className={`flex-1 max-w-[100px] md:max-w-[140px] bg-[#f5e6d3] border-4 border-[#8d6e63] rounded-lg overflow-hidden relative ${
+                            isReelStopped && isWin ? 'reel-win' : ''
+                          }`}
+                          style={{
+                            height: `${symbolHeight}px`,
+                            boxShadow: 'inset 0 0 20px rgba(0,0,0,0.3), 0 4px 8px rgba(0,0,0,0.2)',
+                            background: 'linear-gradient(to bottom, #f5e6d3 0%, #e8d4b8 100%)',
+                          }}
+                        >
+                          {/* Top/Bottom Shadows */}
+                          <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-[#2d1a0f]/90 to-transparent z-20 pointer-events-none" />
+                          <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-[#2d1a0f]/90 to-transparent z-20 pointer-events-none" />
+                          
+                          {/* Spinning Reel Strip */}
+                          <div 
+                            className={`absolute left-0 right-0 ${isReelSpinning ? `reel-spinning-${reelIndex}` : 'reel-stopping'}`}
+                            style={{
+                              top: isReelStopped 
+                                ? `${-targetSymbol * symbolHeight}px`
+                                : `${reelOffsets[reelIndex]}px`,
+                            }}
+                          >
+                            {extendedSymbols.map((symbol, idx) => (
+                              <div 
+                                key={idx}
+                                className="flex flex-col items-center justify-center"
+                                style={{ height: `${symbolHeight}px` }}
+                              >
+                                <span 
+                                  className={`text-4xl md:text-5xl ${isReelStopped && idx % SYMBOLS.length === targetSymbol ? 'reel-reveal' : ''}`}
+                                  style={{
+                                    filter: isReelStopped && isWin && idx % SYMBOLS.length === targetSymbol
+                                      ? 'drop-shadow(0 0 8px rgba(197, 179, 88, 0.8))' 
+                                      : 'drop-shadow(2px 2px 4px rgba(0,0,0,0.3))',
+                                  }}
+                                >
+                                  {symbol.emoji}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
+
+                {/* Win/Lose Indicator and Instructions */}
+                <div className="text-center relative z-10">
+                  {!user && isLoaded ? (
+                    <div>
+                      <a 
+                        href="/sign-in" 
+                        className="bg-accent-gold hover:bg-accent-gold/80 text-ink font-display text-base md:text-lg px-6 py-3 rounded-lg border-4 border-ink shadow-lg hover:shadow-xl transition-all uppercase tracking-wider font-bold inline-block"
+                      >
+                        Sign in to Play
+                      </a>
+                      <p className="text-paper-light text-sm mt-2">Sign in to track your spins!</p>
+                    </div>
+                  ) : spins === 0 ? (
+                    <div>
+                      <p className="text-paper-light font-display text-lg mb-2">NO SPINS LEFT</p>
+                      <p className="text-paper-light text-sm">
+                        <a href="/report" className="text-accent-gold underline hover:text-accent-gold/80">Report a found item</a> to earn 5 spins!
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-paper-light font-display text-lg tracking-wide">
+                      {spinning ? '🔍 INVESTIGATING...' : '👉 PULL THE LEVER TO SPIN'}
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
 
-            {/* Recent Winners Section */}
-            <div className="mt-12 w-full max-w-2xl">
-                <div className="bg-paper-light border-4 border-ink rounded-sm p-6 shadow-pixel-lg relative">
-                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-ink text-paper-light px-4 py-1 font-display text-sm">
-                        RECENT MYSTERIES SOLVED
-                    </div>
-                    <ul className="space-y-3 font-handwriting text-lg md:text-xl text-ink mt-4">
-                        <li className="flex justify-between items-center border-b border-gray-400 border-dashed pb-1">
-                            <span className="flex items-center gap-2">
-                                <span className="w-2 h-2 bg-green-500 rounded-full border border-black"></span>
-                                <span className="font-bold">@Watson_Jr</span> claimed:
-                            </span>
-                            <span className="text-primary">Vintage Calculator</span>
-                        </li>
-                        <li className="flex justify-between items-center border-b border-gray-400 border-dashed pb-1">
-                            <span className="flex items-center gap-2">
-                                <span className="w-2 h-2 bg-green-500 rounded-full border border-black"></span>
-                                <span className="font-bold">@MoriartyFan</span> claimed:
-                            </span>
-                            <span className="text-primary">Left Airpod (Gen 2)</span>
-                        </li>
-                        <li className="flex justify-between items-center">
-                            <span className="flex items-center gap-2">
-                                <span className="w-2 h-2 bg-green-500 rounded-full border border-black"></span>
-                                <span className="font-bold">@SherlockH</span> claimed:
-                            </span>
-                            <span className="text-primary">Beige Trenchcoat</span>
-                        </li>
-                    </ul>
+            {/* Lever */}
+            <div className="flex flex-col items-center justify-center" style={{ minWidth: '60px' }}>
+              <button
+                onClick={() => {
+                  if (!spinning && user && spins !== null && spins > 0) {
+                    setLeverPulled(true);
+                    setTimeout(() => setLeverPulled(false), 600);
+                    spin();
+                  } else if (!user && isLoaded) {
+                    setLoseMessage('Please sign in to play!');
+                  } else if (spins === 0) {
+                    setLoseMessage('No spins remaining! Report a found item to earn more.');
+                  }
+                }}
+                disabled={spinning || !user || spins === 0}
+                className="relative group cursor-pointer disabled:cursor-not-allowed focus:outline-none"
+                style={{ height: '280px', width: '60px' }}
+              >
+                {/* Lever Base */}
+                <div 
+                  className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-8 rounded-b-lg"
+                  style={{
+                    background: 'linear-gradient(to bottom, #5d4037, #3e2723)',
+                    boxShadow: '0 4px 8px rgba(0,0,0,0.4)',
+                  }}
+                />
+                
+                {/* Lever Arm */}
+                <div 
+                  className={`absolute bottom-6 left-1/2 origin-bottom ${leverPulled ? 'lever-pulled' : ''}`}
+                  style={{
+                    width: '12px',
+                    height: '180px',
+                    marginLeft: '-6px',
+                    background: 'linear-gradient(to right, #757575, #9e9e9e, #757575)',
+                    borderRadius: '6px',
+                    boxShadow: '2px 0 4px rgba(0,0,0,0.3)',
+                    transition: spinning ? 'none' : 'transform 0.1s ease-out',
+                    transform: !spinning && !leverPulled ? 'rotate(0deg)' : undefined,
+                  }}
+                >
+                  {/* Lever Ball */}
+                  <div 
+                    className={`absolute -top-8 left-1/2 -translate-x-1/2 ${leverPulled ? 'lever-ball-bounce' : ''}`}
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      background: spins === 0 || !user 
+                        ? 'linear-gradient(135deg, #757575 0%, #424242 100%)'
+                        : 'linear-gradient(135deg, #c62828 0%, #b71c1c 50%, #7f0000 100%)',
+                      boxShadow: spins === 0 || !user
+                        ? 'inset -3px -3px 6px rgba(0,0,0,0.3), inset 3px 3px 6px rgba(255,255,255,0.1), 0 4px 8px rgba(0,0,0,0.4)'
+                        : 'inset -3px -3px 6px rgba(0,0,0,0.3), inset 3px 3px 6px rgba(255,255,255,0.2), 0 4px 8px rgba(0,0,0,0.4), 0 0 15px rgba(198,40,40,0.3)',
+                      transition: 'all 0.2s ease-out',
+                      transform: !spinning && user && spins !== null && spins > 0 ? 'scale(1)' : 'scale(0.95)',
+                    }}
+                  >
+                    {/* Shine effect */}
+                    <div 
+                      className="absolute top-2 left-2 w-3 h-3 rounded-full"
+                      style={{
+                        background: 'rgba(255,255,255,0.4)',
+                      }}
+                    />
+                  </div>
                 </div>
                 
-                <div className="mt-4 text-center">
-                    <p className="font-handwriting text-sm text-gray-500">
-                        * Tokens are earned by reporting found items. 
-                        <a className="underline text-primary hover:text-red-500 ml-1" href="#">Learn more</a>
-                    </p>
+                {/* Lever Label */}
+                <div 
+                  className="absolute -bottom-8 left-1/2 -translate-x-1/2 font-display text-xs text-gray-600 uppercase tracking-wider whitespace-nowrap"
+                >
+                  {spinning ? 'SPINNING' : 'PULL'}
                 </div>
+              </button>
             </div>
+          </div>
+
+          {/* Recent Wins */}
+          <div className="mt-12 w-full max-w-2xl">
+            <div className="bg-paper-light border-4 border-ink rounded-lg p-6 shadow-pixel-lg">
+              <h3 className="font-display text-lg text-primary mb-4 text-center uppercase tracking-wide">
+                Recent Mysteries Solved
+              </h3>
+              <ul className="space-y-2 font-handwriting text-base text-ink">
+                <li className="flex justify-between items-center border-b border-gray-300 border-dashed pb-2">
+                  <span className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <span className="font-bold">@Watson_Jr</span>
+                  </span>
+                  <span className="text-primary">Vintage Calculator</span>
+                </li>
+                <li className="flex justify-between items-center border-b border-gray-300 border-dashed pb-2">
+                  <span className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <span className="font-bold">@MoriartyFan</span>
+                  </span>
+                  <span className="text-primary">Left Airpod (Gen 2)</span>
+                </li>
+                <li className="flex justify-between items-center">
+                  <span className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <span className="font-bold">@SherlockH</span>
+                  </span>
+                  <span className="text-primary">Beige Trenchcoat</span>
+                </li>
+              </ul>
+            </div>
+            <div className="mt-4 text-center space-y-2">
+              <p className="font-handwriting text-sm text-gray-500">
+                * Win = 3 matching symbols. Your reward is a real unclaimed item (6+ months in archives).
+              </p>
+              <div className="bg-accent-gold/10 border-2 border-accent-gold rounded p-3 inline-block">
+                <p className="font-display text-sm text-ink">
+                  <span className="font-bold">How to earn spins:</span>
+                </p>
+                <ul className="font-handwriting text-sm text-gray-700 mt-1 text-left">
+                  <li>🎁 <strong>+3 spins</strong> — New account bonus</li>
+                  <li>📦 <strong>+5 spins</strong> — <a className="underline text-primary hover:text-primary-dark" href="/report">Report a found item</a></li>
+                  <li>😢 <strong>+2 spins</strong> — When your lost item can&apos;t be matched</li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
       </main>
 
-      {/* Footer matching standard layout style */}
       <footer className="w-full border-t-4 border-primary-dark bg-wood-dark text-white p-2 relative z-20">
         <div className="container mx-auto flex flex-col md:flex-row justify-between items-center text-lg md:text-xl font-bold tracking-wide">
           <div className="flex items-center space-x-4 mb-2 md:mb-0">
-             <div className="flex items-center text-primary">
-               <span className="material-icons mr-1 text-base">local_police</span>
-               <span>© 2023 SherlostHolmes</span>
-             </div>
-             <div className="h-4 w-0.5 bg-gray-500"></div>
-             <div className="text-gray-300">Concordia University</div>
+            <div className="flex items-center text-primary">
+              <span className="material-icons mr-1 text-base">local_police</span>
+              <span>© 2026 SherlostHolmes</span>
+            </div>
+            <div className="h-4 w-0.5 bg-gray-500" />
+            <div className="text-gray-300">Concordia University</div>
           </div>
         </div>
       </footer>
+
+      {/* Win Modal */}
+      {showRewardModal && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setShowRewardModal(false)}
+          style={{ position: 'fixed', zIndex: 9999 }}
+        >
+          <div
+            className="bg-paper-light border-4 border-ink rounded-lg shadow-2xl max-w-md w-full p-6 font-handwriting"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              animation: 'zoom-in-95 0.3s ease-out',
+              position: 'relative',
+              zIndex: 10000,
+            }}
+          >
+            <h3 className="font-display text-2xl text-primary mb-4 text-center">🎉 Case Solved!</h3>
+            {reward ? (
+              <>
+                <div className="bg-accent-gold/10 border-2 border-accent-gold rounded p-4 mb-4">
+                  <p className="text-sm text-gray-600 mb-1">Your reward — unclaimed 6+ months:</p>
+                  <p className="text-2xl text-primary mb-2 font-display font-bold">{reward.item_name}</p>
+                  {reward.category && (
+                    <p className="text-sm text-gray-600">Category: <span className="font-bold">{reward.category}</span></p>
+                  )}
+                  {reward.location_name && (
+                    <p className="text-sm text-gray-600">Found at: <span className="font-bold">{reward.location_name}</span></p>
+                  )}
+                  {reward.description && (
+                    <p className="text-sm text-gray-700 mt-2 italic">{reward.description}</p>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 text-center mb-4">
+                  Contact Lost &amp; Found to claim this item.
+                </p>
+              </>
+            ) : (
+              <div className="text-center py-4">
+                <div className="animate-spin text-4xl mb-4">🔍</div>
+                <p className="text-gray-700">Searching the archives...</p>
+              </div>
+            )}
+            <button
+              onClick={() => setShowRewardModal(false)}
+              className="w-full bg-primary text-white font-display py-3 px-4 rounded-lg border-2 border-primary-dark hover:bg-primary-dark transition-colors uppercase tracking-wide font-bold"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

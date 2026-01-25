@@ -4,10 +4,10 @@ Items Routes - Lost/Found Item Reports
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List, Literal
-from datetime import datetime
+from datetime import datetime, timedelta
 from bson import ObjectId
 
-from database import get_items_collection
+from database import get_items_collection, get_users_collection
 from ai import generate_item_ai_data
 from embeddings import generate_item_embeddings
 
@@ -232,6 +232,20 @@ async def create_item(item: ItemCreate):
                 {"$set": {"embeddings": embeddings_data, "updated_at": datetime.utcnow()}}
             )
 
+        # Award 5 spins to the user for submitting a found item
+        spins_awarded = 0
+        if item.user_id:
+            try:
+                users = get_users_collection()
+                result = users.update_one(
+                    {"clerk_id": item.user_id},
+                    {"$inc": {"spins": 5}}
+                )
+                if result.matched_count > 0:
+                    spins_awarded = 5
+            except Exception:
+                pass  # Don't fail item creation if spin award fails
+
         # Return the created item
         return ItemResponse(
             id=item_id,
@@ -327,6 +341,108 @@ async def get_all_items(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch items: {str(e)}")
+
+
+# ============== Archived Items (6+ months old) ==============
+class ArchivedItemResponse(BaseModel):
+    """Schema for archived item response (simplified for slot machine)"""
+    id: str
+    item_name: str
+    description: Optional[str] = None
+    category: str
+    location_name: Optional[str] = None
+    date_found: Optional[datetime] = None
+
+
+@router.get("/archived", response_model=List[ArchivedItemResponse])
+async def get_archived_items():
+    """
+    Get items that have been unclaimed for 6+ months.
+    These items are eligible for the Lucky Find slot machine prize.
+    """
+    try:
+        items = get_items_collection()
+        
+        # Calculate the cutoff date (6 months ago)
+        six_months_ago = datetime.utcnow() - timedelta(days=180)
+        
+        # Query for unclaimed items older than 6 months
+        query = {
+            "status": "unclaimed",
+            "date_found": {"$lte": six_months_ago}
+        }
+        
+        cursor = items.find(query).sort("date_found", 1).limit(100)
+        
+        results = []
+        for doc in cursor:
+            results.append(ArchivedItemResponse(
+                id=str(doc["_id"]),
+                item_name=doc.get("item_name", "Unknown Item"),
+                description=doc.get("description"),
+                category=doc.get("category", "other"),
+                location_name=doc.get("location_name"),
+                date_found=doc.get("date_found")
+            ))
+        
+        return results
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch archived items: {str(e)}")
+
+
+@router.post("/archived/{item_id}/claim")
+async def claim_archived_item(item_id: str, user_id: Optional[str] = None):
+    """
+    Claim an archived item from the slot machine win.
+    Marks the item as 'returned' and records the winner.
+    """
+    try:
+        items = get_items_collection()
+        
+        # Verify the item exists and is archived (6+ months old, unclaimed)
+        six_months_ago = datetime.utcnow() - timedelta(days=180)
+        
+        doc = items.find_one({
+            "_id": ObjectId(item_id),
+            "status": "unclaimed",
+            "date_found": {"$lte": six_months_ago}
+        })
+        
+        if not doc:
+            raise HTTPException(
+                status_code=404, 
+                detail="Item not found or not eligible for claiming"
+            )
+        
+        # Update the item status to 'returned' and record claim info
+        result = items.update_one(
+            {"_id": ObjectId(item_id)},
+            {
+                "$set": {
+                    "status": "returned",
+                    "claimed_via": "lucky_find_slot_machine",
+                    "claimed_by": user_id,
+                    "claimed_at": datetime.utcnow(),
+                    "updated_at": datetime.utcnow()
+                }
+            }
+        )
+        
+        if result.modified_count == 0:
+            raise HTTPException(status_code=500, detail="Failed to claim item")
+        
+        return {
+            "status": "success",
+            "message": "Item claimed successfully!",
+            "item_id": item_id,
+            "item_name": doc.get("item_name", "Unknown Item")
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to claim item: {str(e)}")
 
 
 @router.get("/{item_id}", response_model=ItemResponse)
