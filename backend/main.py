@@ -9,16 +9,23 @@ from routes.users import router as users_router
 from routes.images import router as images_router
 from routes.inquiries import router as inquiries_router
 from routes.items import router as items_router
+from routes.matching import router as matching_router
 
 # AI imports (From main)
 from ai import get_sherlock_deduction, test_openrouter_connection
+from embeddings import test_embedding_connection
 
 app = FastAPI(title="SherLostHolmes API", version="1.0.0")
 
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],  # Next.js default port
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -29,6 +36,7 @@ app.include_router(users_router)
 app.include_router(images_router)
 app.include_router(inquiries_router)
 app.include_router(items_router)
+app.include_router(matching_router)
 
 # Don't block startup with database operations
 # Indexes will be created on first db-test call
@@ -63,6 +71,12 @@ def get_github():
 def test_ai():
     # Test OpenRouter API connection
     return test_openrouter_connection()
+
+
+@app.get("/api/test-embeddings")
+def test_embeddings():
+    """Test OpenRouter embedding APIs (text and multimodal)"""
+    return test_embedding_connection()
 
 class DeductionRequest(BaseModel):
     lost_item_description: str

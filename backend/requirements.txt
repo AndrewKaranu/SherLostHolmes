@@ -6,3 +6,9 @@ pydantic[email]
 requests
 pydantic
 cloudinary
+# LangChain for agentic matching system
+langchain>=0.3.0
+langchain-openai>=0.3.0
+langgraph>=0.2.0
+# Math utilities
+numpy

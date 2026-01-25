@@ -1,4 +1,5 @@
 import os
+import json
 import requests
 from typing import List, Dict, Optional
 from dotenv import load_dotenv
@@ -6,6 +7,148 @@ from dotenv import load_dotenv
 load_dotenv()
 
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+
+
+def generate_item_ai_data(
+    item_name: str,
+    description: Optional[str] = None,
+    category: Optional[str] = None,
+    location_name: Optional[str] = None,
+    location_description: Optional[str] = None,
+    notes: Optional[str] = None,
+    image_urls: Optional[List[str]] = None
+) -> Dict:
+    """
+    Generate AI data for an item using OpenRouter LLM.
+
+    This function analyzes the item details and images to generate:
+    - vector_context: Rich description for embedding
+    - blind_lineup_display: Public teaser without identifying info
+    - persona_engine: Character/personality for chat interactions
+
+    Returns a dictionary with the structured AI data.
+    """
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    if not api_key:
+        raise ValueError("OPENROUTER_API_KEY environment variable is not set")
+
+    # Build the context from all available information
+    context_parts = []
+    if item_name:
+        context_parts.append(f"Item Name: {item_name}")
+    if category:
+        context_parts.append(f"Category: {category}")
+    if description:
+        context_parts.append(f"Description: {description}")
+    if location_name:
+        context_parts.append(f"Location: {location_name}")
+    if location_description:
+        context_parts.append(f"Location Details: {location_description}")
+    if notes:
+        context_parts.append(f"Additional Notes: {notes}")
+
+    item_context = "\n".join(context_parts)
+
+    # Build the message content with images if available
+    user_content = []
+
+    # Add text prompt
+    user_content.append({
+        "type": "text",
+        "text": f"""Analyze this lost item and generate structured data for our lost-and-found matching system.
+
+ITEM INFORMATION:
+{item_context}
+
+Based on all available information (and any images provided), generate a JSON response with EXACTLY this structure:
+
+{{
+  "vector_context": {{
+    "rich_description": "A dense, factual paragraph combining visual details and inferred context. This will be passed to an Embedding Model for semantic matching. Include colors, materials, condition, distinguishing features, brand if visible, size, and any unique characteristics. Example: 'A black iPhone 14 with a spiderweb crack on the top-left corner. It has a red bumper case and a sticker of a cat on the back. Found in a study environment.'"
+  }},
+
+  "blind_lineup_display": {{
+    "public_teaser": "A mysterious, 5-10 word hint for the public 'Lineup' card. It must NOT reveal unique identifiers. Bad: 'iPhone with cat sticker'. Good: 'A damaged smartphone with a playful decoration.'",
+    "blur_reason": "A short, playful justification for why details are hidden. Examples: 'Bio-metric lock engaged', 'Too shy to show face', 'Identity protection protocol active', 'Mystery must be preserved'."
+  }},
+
+  "persona_engine": {{
+    "archetype": "The personality vibe/type. Examples: 'The Grumpy Veteran', 'The Eager Puppy', 'The Snooty Aristocrat', 'The Mysterious Stranger', 'The Anxious Academic'.",
+    "character_name": "A creative, punny nickname based on the item. Examples: 'Shattered Steve' (cracked phone), 'Lord Wallet', 'Captain Keys', 'Professor Pages' (book).",
+    "secret_knowledge": "The ONE specific visual detail that proves ownership. This is what the real owner would know. Examples: 'The cat sticker on the back', 'The scratch over the Apple logo', 'The coffee stain on page 42'.",
+    "system_instruction": "A detailed system prompt for the chatbot. Define the personality, speaking style, and strictly forbid revealing the 'secret_knowledge' directly. Instruct the bot to ask leading questions to verify ownership without giving away the secret. Include the character voice and how they should respond to correct/incorrect guesses.",
+    "opening_line": "The very first message the item sends when chat opens. It should be in character, intriguing, and subtly challenge the user to prove ownership. Examples: 'My screen hurts... do you know why?', 'I've been waiting. Can you tell me about my favorite decoration?'"
+  }}
+}}
+
+IMPORTANT:
+- Return ONLY valid JSON, no markdown code blocks
+- Be creative with the persona but keep it appropriate
+- The secret_knowledge should be something only the real owner would know
+- Make the public_teaser intriguing but not identifying
+- The system_instruction should be comprehensive enough to run a verification chat"""
+    })
+
+    # Add images if available
+    if image_urls:
+        for img_url in image_urls[:4]:  # Limit to 4 images
+            user_content.append({
+                "type": "image_url",
+                "image_url": {"url": img_url}
+            })
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://github.com/AndrewKaranu/SherLostHolmes",
+    }
+
+    payload = {
+        "model": "openai/gpt-4o-mini",  # Vision-capable model
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are an expert at analyzing lost items and creating engaging, mysterious personas for a lost-and-found gamification system. You analyze images and descriptions to generate structured data. Always respond with valid JSON only."
+            },
+            {
+                "role": "user",
+                "content": user_content
+            }
+        ],
+        "temperature": 0.7,
+        "max_tokens": 1500,
+    }
+
+    try:
+        response = requests.post(OPENROUTER_API_URL, json=payload, headers=headers, timeout=60)
+        response.raise_for_status()
+
+        data = response.json()
+        if "choices" in data and len(data["choices"]) > 0:
+            ai_message = data["choices"][0]["message"]["content"]
+
+            # Clean up the response (remove markdown code blocks if present)
+            ai_message = ai_message.strip()
+            if ai_message.startswith("```json"):
+                ai_message = ai_message[7:]
+            if ai_message.startswith("```"):
+                ai_message = ai_message[3:]
+            if ai_message.endswith("```"):
+                ai_message = ai_message[:-3]
+            ai_message = ai_message.strip()
+
+            # Parse the JSON response
+            result = json.loads(ai_message)
+            return result
+        else:
+            raise ValueError("Unexpected response format from OpenRouter API")
+
+    except requests.exceptions.RequestException as e:
+        raise ValueError(f"Failed to connect to OpenRouter API: {str(e)}")
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Failed to parse AI response as JSON: {str(e)}")
+    except Exception as e:
+        raise ValueError(f"AI generation error: {str(e)}")
 
 
 def test_openrouter_connection():
