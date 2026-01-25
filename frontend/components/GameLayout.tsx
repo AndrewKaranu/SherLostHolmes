@@ -1,5 +1,6 @@
 'use client';
 import { ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { useUser, SignOutButton } from '@clerk/nextjs';
 
 interface GameLayoutProps {
@@ -7,11 +8,19 @@ interface GameLayoutProps {
 }
 
 export default function GameLayout({ children }: GameLayoutProps) {
+  const router = useRouter();
   const { isSignedIn, user } = useUser();
-  
+
   // Get student ID and name from user metadata
   const studentId = user?.unsafeMetadata?.studentId as string | undefined;
   const userName = user?.firstName || user?.username || 'Detective';
+
+  // Handle Sherlock image click - navigate to admin password page if signed in
+  const handleSherlockClick = () => {
+    if (isSignedIn) {
+      router.push('/admin-password');
+    }
+  };
 
   return (
     <main className="font-display min-h-screen flex flex-col pixel-cursor overflow-hidden relative">
@@ -73,11 +82,15 @@ export default function GameLayout({ children }: GameLayoutProps) {
             EST. 1887 • CONCORDIA LOST & FOUND
           </p>
           
-          {/* Sherlock Standing Next to "S" */}
-          <div className="absolute right-full -mr-16 -top-8 w-64 z-50 pointer-events-none">
-             <img 
-                src="/sherlock_fullOnConcordia.png" 
-                alt="Sherlock Holmes" 
+          {/* Sherlock Standing Next to "S" - Clickable when signed in for admin access */}
+          <div
+            className={`absolute right-full -mr-16 -top-8 w-64 z-50 ${isSignedIn ? 'cursor-pointer hover:scale-105 transition-transform' : 'pointer-events-none'}`}
+            onClick={handleSherlockClick}
+            title={isSignedIn ? 'Access Admin Panel' : undefined}
+          >
+             <img
+                src="/sherlock_fullOnConcordia.png"
+                alt="Sherlock Holmes"
                 className="w-full h-auto drop-shadow-xl"
               />
           </div>

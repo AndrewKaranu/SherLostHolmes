@@ -10,10 +10,12 @@ from routes.images import router as images_router
 from routes.inquiries import router as inquiries_router
 from routes.items import router as items_router
 from routes.matching import router as matching_router
+from routes.lockers import router as lockers_router
 
 # AI imports (From main)
 from ai import get_sherlock_deduction, test_openrouter_connection
 from embeddings import test_embedding_connection
+from email_service import send_approval_email, send_denial_email, send_email
 
 app = FastAPI(title="SherLostHolmes API", version="1.0.0")
 
@@ -37,6 +39,7 @@ app.include_router(images_router)
 app.include_router(inquiries_router)
 app.include_router(items_router)
 app.include_router(matching_router)
+app.include_router(lockers_router)
 
 # Don't block startup with database operations
 # Indexes will be created on first db-test call
@@ -77,6 +80,33 @@ def test_ai():
 def test_embeddings():
     """Test OpenRouter embedding APIs (text and multimodal)"""
     return test_embedding_connection()
+
+
+class TestEmailRequest(BaseModel):
+    to_email: str
+    email_type: str = "approval"  # "approval" or "denial"
+
+
+@app.post("/api/test-email")
+def test_email(request: TestEmailRequest):
+    """Test email sending functionality"""
+    if request.email_type == "approval":
+        result = send_approval_email(
+            to_email=request.to_email,
+            item_name="Test Silver Watch",
+            locker_number=5,
+            locker_location="Hall Building - H1 Lobby",
+            password="1234",
+            claimant_name="Test Detective"
+        )
+    else:
+        result = send_denial_email(
+            to_email=request.to_email,
+            item_name="Test Silver Watch",
+            reason="This is a test denial email. The evidence provided did not match our records.",
+            claimant_name="Test Detective"
+        )
+    return result
 
 class DeductionRequest(BaseModel):
     lost_item_description: str

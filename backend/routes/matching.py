@@ -9,11 +9,36 @@ from typing import Optional, List, Literal
 from datetime import datetime
 from bson import ObjectId
 
-from database import get_matches_collection, get_items_collection
+from database import get_matches_collection, get_items_collection, get_users_collection, get_lockers_collection
 from matching_agent import get_session_manager, MatchingSessionManager
 from interrogation_agent import get_interrogation_manager, InterrogationManager
+from email_service import send_approval_email, send_denial_email
 
 router = APIRouter(prefix="/api/matching", tags=["matching"])
+
+
+# ============== Helper Functions ==============
+def sanitize_lineup_for_frontend(lineup: List[dict]) -> List[dict]:
+    """
+    Remove sensitive fields from lineup before sending to frontend.
+    This prevents fraud detection mechanisms from being exposed.
+    """
+    if not lineup:
+        return []
+    
+    sanitized = []
+    for suspect in lineup:
+        safe_suspect = {
+            "suspect_id": suspect.get("suspect_id"),
+            "suspect_letter": suspect.get("suspect_letter"),
+            "blurred_image": suspect.get("blurred_image"),
+            "teaser": suspect.get("teaser"),
+            "blur_reason": suspect.get("blur_reason"),
+            "character_name": suspect.get("character_name"),
+        }
+        sanitized.append(safe_suspect)
+    
+    return sanitized
 
 
 # ============== Request/Response Models ==============
@@ -298,7 +323,7 @@ async def submit_bulk_intake(session_id: str, request: BulkIntakeRequest):
             "session_id": session_id,
             "stage": state.stage,
             "messages": [{"role": "assistant", "content": m.content} for m in all_messages if isinstance(m, AIMessage)],
-            "lineup": state.lineup,
+            "lineup": sanitize_lineup_for_frontend(state.lineup),
             "filter_stats": state.filter_stats,
             "match_result": None
         }
@@ -357,7 +382,7 @@ async def get_session_status(session_id: str):
         intake_complete=state.intake_complete,
         intake_data=state.intake_data,
         filter_stats=state.filter_stats,
-        lineup=state.lineup if state.stage in ["lineup", "interrogation"] else None,
+        lineup=sanitize_lineup_for_frontend(state.lineup) if state.stage in ["lineup", "interrogation"] else None,
         selected_suspect_id=state.selected_suspect_id,
         trust_score=state.trust_score,
         match_score=state.match_score,
@@ -387,7 +412,7 @@ async def get_lineup(session_id: str):
     
     return {
         "session_id": session_id,
-        "lineup": state.lineup,
+        "lineup": sanitize_lineup_for_frontend(state.lineup),
         "selected_suspect": {
             "id": state.selected_suspect_id,
             "letter": state.selected_suspect_letter
@@ -661,60 +686,265 @@ async def get_user_match_history(user_id: str):
 @router.get("/pending-review")
 async def get_pending_reviews():
     """
-    Get all matches pending assistant review.
-    
-    For assistant dashboard.
-    """
-    matches_collection = get_matches_collection()
-    
-    pending = list(matches_collection.find(
-        {"match_status": {"$in": ["probable_match", "needs_review"]}}
-    ).sort("created_at", -1))
-    
-    for match in pending:
-        match["_id"] = str(match["_id"])
-    
-    return {"pending_count": len(pending), "matches": pending}
+    Get all matches pending assistant review with full details.
 
-
-@router.post("/review/{match_id}")
-async def review_match(match_id: str, decision: Literal["approve", "reject"], notes: Optional[str] = None):
-    """
-    Assistant reviews and finalizes a match.
+    Includes:
+    - Match data with scores
+    - Item details (name, images, location)
+    - Claimant details
+    - Multiple claims detection
     """
     matches_collection = get_matches_collection()
     items_collection = get_items_collection()
-    
+    users_collection = get_users_collection()
+
+    pending = list(matches_collection.find(
+        {"match_status": {"$in": ["probable_match", "needs_review"]}}
+    ).sort("created_at", -1))
+
+    # Group matches by item_id to detect multiple claims
+    item_claims = {}
+    for match in pending:
+        item_id = match.get("item_id")
+        if item_id:
+            if item_id not in item_claims:
+                item_claims[item_id] = []
+            item_claims[item_id].append(str(match["_id"]))
+
+    enriched_matches = []
+    for match in pending:
+        match["_id"] = str(match["_id"])
+
+        # Get item details
+        item_id = match.get("item_id")
+        item_data = None
+        if item_id:
+            item = items_collection.find_one({"_id": ObjectId(item_id)})
+            if item:
+                item_data = {
+                    "id": str(item["_id"]),
+                    "name": item.get("item_name", "Unknown Item"),
+                    "description": item.get("description"),
+                    "category": item.get("category"),
+                    "location_name": item.get("location_name"),
+                    "date_found": item.get("date_found"),
+                    "image_url_clear": item.get("image_url_clear"),
+                    "image_url_blurred": item.get("image_url_blurred"),
+                    "image_urls": item.get("image_urls", [])
+                }
+
+        # Get claimant details
+        user_id = match.get("user_id")
+        claimant_data = None
+        if user_id:
+            user = users_collection.find_one({"clerk_id": user_id})
+            if user:
+                claimant_data = {
+                    "id": user_id,
+                    "email": user.get("email"),
+                    "student_id": user.get("student_id"),
+                    "trust_rating": user.get("trust_rating", 5.0)
+                }
+
+        # Check for multiple claims on this item
+        competing_claims = item_claims.get(item_id, [])
+        has_multiple_claims = len(competing_claims) > 1
+
+        # Get intake data images
+        intake_data = match.get("intake_data", {})
+        claimant_images = intake_data.get("image_urls", [])
+
+        enriched_matches.append({
+            **match,
+            "item": item_data,
+            "claimant": claimant_data,
+            "claimant_images": claimant_images,
+            "has_multiple_claims": has_multiple_claims,
+            "competing_claim_ids": competing_claims if has_multiple_claims else [],
+            "claim_count": len(competing_claims)
+        })
+
+    return {
+        "pending_count": len(enriched_matches),
+        "matches": enriched_matches,
+        "items_with_multiple_claims": sum(1 for m in enriched_matches if m["has_multiple_claims"])
+    }
+
+
+class ReviewMatchRequest(BaseModel):
+    """Request body for reviewing a match."""
+    decision: Literal["approve", "reject"]
+    notes: Optional[str] = None
+
+
+@router.post("/review/{match_id}")
+async def review_match(match_id: str, request: ReviewMatchRequest):
+    """
+    Assistant reviews and finalizes a match.
+
+    On approval:
+    - Assigns a locker for pickup
+    - Sends approval email with locker code and location
+
+    On rejection:
+    - Sends denial email with reason
+    - Returns item to unclaimed status
+    """
+    matches_collection = get_matches_collection()
+    items_collection = get_items_collection()
+    users_collection = get_users_collection()
+
     try:
         match = matches_collection.find_one({"_id": ObjectId(match_id)})
         if not match:
             raise HTTPException(status_code=404, detail="Match not found")
-        
-        new_status = "confirmed_match" if decision == "approve" else "rejected"
-        
-        matches_collection.update_one(
-            {"_id": ObjectId(match_id)},
-            {
-                "$set": {
-                    "match_status": new_status,
-                    "reviewed_at": datetime.utcnow(),
-                    "review_notes": notes
-                }
+
+        # Get item details
+        item = items_collection.find_one({"_id": ObjectId(match["item_id"])})
+        if not item:
+            raise HTTPException(status_code=404, detail="Item not found")
+
+        item_name = item.get("item_name", "Unknown Item")
+
+        # Get user details
+        user_id = match.get("user_id")
+        user_email = None
+        user_name = None
+
+        if user_id:
+            user = users_collection.find_one({"clerk_id": user_id})
+            if user:
+                user_email = user.get("email")
+                user_name = user.get("student_id") or "Detective"
+
+        # Also check intake data for contact email
+        intake_data = match.get("intake_data", {})
+        if not user_email and intake_data.get("contact_email"):
+            user_email = intake_data.get("contact_email")
+
+        new_status = "confirmed_match" if request.decision == "approve" else "rejected"
+        now = datetime.utcnow()
+
+        locker_info = None
+        email_result = None
+
+        if request.decision == "approve":
+            # Assign a locker
+            from routes.lockers import find_available_locker, generate_locker_password, LOCKER_LOCATIONS, initialize_lockers
+            lockers_collection = get_lockers_collection()
+
+            # Initialize lockers if needed
+            if lockers_collection.count_documents({}) == 0:
+                initialize_lockers()
+
+            locker_number = find_available_locker()
+            if locker_number is None:
+                raise HTTPException(
+                    status_code=503,
+                    detail="No lockers available. Please try again later."
+                )
+
+            password = generate_locker_password()
+            location = LOCKER_LOCATIONS.get(locker_number, f"Locker Station {locker_number}")
+
+            # Update locker
+            locker_data = {
+                "locker_number": locker_number,
+                "location": location,
+                "status": "assigned",
+                "item_id": str(match["item_id"]),
+                "match_id": match_id,
+                "user_id": user_id,
+                "user_email": user_email,
+                "password": password,
+                "item_name": item_name,
+                "assigned_at": now,
+                "unlocked_at": None,
+                "collected_at": None,
+                "updated_at": now
             }
-        )
-        
-        # Update item status
-        item_status = "returned" if decision == "approve" else "unclaimed"
-        items_collection.update_one(
-            {"_id": ObjectId(match["item_id"])},
-            {"$set": {"status": item_status, "updated_at": datetime.utcnow()}}
-        )
-        
+
+            lockers_collection.update_one(
+                {"locker_number": locker_number},
+                {"$set": locker_data},
+                upsert=True
+            )
+
+            locker_info = {
+                "locker_number": locker_number,
+                "location": location,
+                "password": password
+            }
+
+            # Update match with locker info
+            matches_collection.update_one(
+                {"_id": ObjectId(match_id)},
+                {
+                    "$set": {
+                        "match_status": new_status,
+                        "reviewed_at": now,
+                        "review_notes": request.notes,
+                        "locker_number": locker_number,
+                        "locker_location": location,
+                        "locker_password": password
+                    }
+                }
+            )
+
+            # Update item status
+            items_collection.update_one(
+                {"_id": ObjectId(match["item_id"])},
+                {"$set": {"status": "matched", "updated_at": now}}
+            )
+
+            # Send approval email
+            if user_email:
+                email_result = send_approval_email(
+                    to_email=user_email,
+                    item_name=item_name,
+                    locker_number=locker_number,
+                    locker_location=location,
+                    password=password,
+                    claimant_name=user_name
+                )
+
+        else:
+            # Rejection
+            matches_collection.update_one(
+                {"_id": ObjectId(match_id)},
+                {
+                    "$set": {
+                        "match_status": new_status,
+                        "reviewed_at": now,
+                        "review_notes": request.notes
+                    }
+                }
+            )
+
+            # Return item to unclaimed
+            items_collection.update_one(
+                {"_id": ObjectId(match["item_id"])},
+                {"$set": {"status": "unclaimed", "updated_at": now}}
+            )
+
+            # Send denial email
+            if user_email:
+                email_result = send_denial_email(
+                    to_email=user_email,
+                    item_name=item_name,
+                    reason=request.notes,
+                    claimant_name=user_name
+                )
+
         return {
             "match_id": match_id,
-            "decision": decision,
-            "new_status": new_status
+            "decision": request.decision,
+            "new_status": new_status,
+            "locker": locker_info,
+            "email_sent": email_result
         }
-    
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
