@@ -4,7 +4,7 @@ import React from 'react';
 
 export default function EvidenceBoard() {
   return (
-    <div className="bg-background-light dark:bg-background-dark font-handwriting min-h-screen text-gray-900 dark:text-gray-100 overflow-x-hidden selection:bg-primary selection:text-white transition-colors duration-300">
+    <div className="bg-background-light font-handwriting min-h-screen text-gray-900 overflow-x-hidden selection:bg-primary selection:text-white transition-colors duration-300">
       <style jsx global>{`
         .pixel-border {
           border-style: solid;
@@ -79,12 +79,12 @@ export default function EvidenceBoard() {
       </nav>
 
       <main className="relative w-full min-h-screen flex items-center justify-center pt-24 pb-12 px-4 scanlines bg-cork-pattern">
-        <div className="relative w-full max-w-6xl h-[800px] bg-wood-dark dark:bg-[#1a120b] border-[12px] border-wood-face shadow-2xl rounded-sm p-8 bg-cork-pattern overflow-hidden">
-          <div className="absolute inset-0 bg-black/10 dark:bg-black/40 pointer-events-none"></div>
+        <div className="relative w-full max-w-6xl h-[800px] bg-wood-dark border-[12px] border-wood-face shadow-2xl rounded-sm p-8 bg-cork-pattern overflow-hidden">
+          <div className="absolute inset-0 bg-black/10 pointer-events-none"></div>
           
           {/* Header Note */}
           <div className="absolute top-8 left-1/2 transform -translate-x-1/2 z-20">
-            <div className="bg-paper-light dark:bg-[#c2b280] px-6 py-3 shadow-pixel transform rotate-1 border-2 border-gray-600">
+            <div className="bg-paper-light px-6 py-3 shadow-pixel transform rotate-1 border-2 border-gray-600">
               <div className="w-4 h-4 rounded-full bg-primary absolute -top-2 left-1/2 transform -translate-x-1/2 shadow-sm border border-black"></div>
               <h1 className="font-display text-lg sm:text-2xl text-primary uppercase tracking-widest text-center">Case #402: The Missing Tabby</h1>
               <p className="text-center text-base sm:text-lg text-gray-700 italic border-t border-gray-400 mt-1 pt-1 font-handwriting">Matching Evidence</p>
@@ -117,7 +117,7 @@ export default function EvidenceBoard() {
           {/* Found Evidence Card */}
           <div className="absolute bottom-1/4 right-4 md:right-32 transform rotate-2 hover:scale-105 transition-transform z-10 w-48 md:w-60">
             <div className="w-6 h-6 rounded-full bg-yellow-500 absolute -top-3 right-4 shadow-md border-2 border-yellow-700 z-20"></div>
-            <div className="bg-paper-light dark:bg-[#e0d4b8] p-4 shadow-pixel-lg border-2 border-[#d2b48c] relative">
+            <div className="bg-paper-light p-4 shadow-pixel-lg border-2 border-[#d2b48c] relative">
               <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-24 h-8 bg-white/40 rotate-1 border-l border-r border-white/20 transform backdrop-blur-sm"></div>
               <h3 className="font-display text-xs text-gray-500 uppercase mb-2">Evidence #992</h3>
               <div className="bg-gray-700 h-24 md:h-32 w-full mb-3 relative border-4 border-white shadow-inner">
@@ -145,7 +145,7 @@ export default function EvidenceBoard() {
           {/* Center Match Action */}
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 flex flex-col items-center">
             <div className="relative group">
-              <div className="w-32 h-32 md:w-48 md:h-48 rounded-full border-[12px] border-gray-800 bg-[#e0f7fa] dark:bg-[#263238] shadow-2xl flex items-center justify-center overflow-hidden relative z-10">
+              <div className="w-32 h-32 md:w-48 md:h-48 rounded-full border-[12px] border-gray-800 bg-[#e0f7fa] shadow-2xl flex items-center justify-center overflow-hidden relative z-10">
                 <div className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white opacity-40 z-20"></div>
                 <span className="material-icons text-6xl md:text-8xl text-primary opacity-80 animate-pulse">fingerprint</span>
                 <div className="absolute inset-0 bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAIklEQVQIW2NkQAKrVq36zwjjgzhhYWGMYAEYB8RmROaABADeOQ8CXl/xfgAAAABJRU5ErkJggg==')] opacity-10 pointer-events-none"></div>
@@ -172,14 +172,14 @@ export default function EvidenceBoard() {
           </div>
 
           {/* Sticky Notes */}
-          <div className="absolute top-10 right-10 w-32 h-32 bg-yellow-300 dark:bg-yellow-600 shadow-md transform rotate-6 p-2 z-0 hidden md:block">
+          <div className="absolute top-10 right-10 w-32 h-32 bg-yellow-300 shadow-md transform rotate-6 p-2 z-0 hidden md:block">
             <div className="w-3 h-3 bg-blue-500 rounded-full mx-auto mb-1 border border-black"></div>
-            <p className="font-handwriting text-xl leading-5 text-gray-800 dark:text-gray-900">Remember to check the alleyway cams.</p>
+            <p className="font-handwriting text-xl leading-5 text-gray-800">Remember to check the alleyway cams.</p>
           </div>
           
-          <div className="absolute bottom-10 left-10 w-40 h-24 bg-pink-300 dark:bg-pink-700 shadow-md transform -rotate-2 p-2 z-0 hidden md:block border-l-8 border-black/10">
+          <div className="absolute bottom-10 left-10 w-40 h-24 bg-pink-300 shadow-md transform -rotate-2 p-2 z-0 hidden md:block border-l-8 border-black/10">
             <div className="w-3 h-3 bg-green-500 rounded-full mx-auto mb-1 border border-black opacity-80"></div>
-            <p className="font-handwriting text-xl text-gray-800 dark:text-gray-100 text-center mt-2">DO NOT REMOVE</p>
+            <p className="font-handwriting text-xl text-gray-800 text-center mt-2">DO NOT REMOVE</p>
           </div>
         </div>
       </main>

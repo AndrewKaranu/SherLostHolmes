@@ -71,11 +71,26 @@ export default function Home() {
 
   return (
     <GameLayout>
-      {/* Visual Components from NominShredding */}
-      <HangingSign icon="login" title="Dashboard" href="/dashboard" />
-      <ChainLink />
+      {/* Show different menu based on auth state */}
+      {isLoaded && isSignedIn ? (
+        <>
+          {/* Signed in - redirect to dashboard or show dashboard content */}
+          <HangingSign icon="assignment_late" title="File a Report" href="/report" />
+          <ChainLink />
+          <HangingSign icon="dashboard" title="Evidence Board" href="/evidence" delay="0.5s" />
+          <ChainLink />
+          <HangingSign icon="🎰" title="Try Your Luck" href="/lucky-find" delay="1s" />
+        </>
+      ) : (
+        <>
+          {/* Not signed in - show login/signup options */}
+          <HangingSign icon="login" title="Sign In" href="/sign-in" />
+          <ChainLink />
+          <HangingSign icon="person_add" title="Register" href="/sign-up" delay="0.5s" />
+        </>
+      )}
       
-      {/* If you want to see system status during dev, you can keep this overlay or remove it for production */}
+      {/* Dev status overlay */}
       <div style={{ 
         position: 'fixed', 
         bottom: '10px', 
@@ -87,12 +102,6 @@ export default function Home() {
       }}>
         Backend: {backendMessage} | DB: {dbStatus}
       </div>
-
-      {!isSignedIn && (
-        <>
-          <HangingSign icon="person_add" title="Register" href="/sign-up" delay="0.5s" />
-        </>
-      )}
     </GameLayout>
   );
 }

@@ -1,20 +1,23 @@
 'use client';
-import { useState, ReactNode } from 'react';
+import { ReactNode } from 'react';
+import { useUser, SignOutButton } from '@clerk/nextjs';
 
 interface GameLayoutProps {
   children: ReactNode;
 }
 
 export default function GameLayout({ children }: GameLayoutProps) {
-  const toggleDarkMode = () => {
-    document.documentElement.classList.toggle('dark');
-  };
+  const { isSignedIn, user } = useUser();
+  
+  // Get student ID and name from user metadata
+  const studentId = user?.unsafeMetadata?.studentId as string | undefined;
+  const userName = user?.firstName || user?.username || 'Detective';
 
   return (
-    <main className="font-display min-h-screen flex flex-col pixel-cursor overflow-hidden relative transition-colors duration-500">
-      <div className="absolute inset-0 bg-concordia-day dark:bg-concordia-night transition-colors duration-500 -z-20"></div>
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 dark:opacity-20 pointer-events-none -z-10 mix-blend-overlay"></div>
-      <div className="scanline hidden dark:block"></div>
+    <main className="font-display min-h-screen flex flex-col pixel-cursor overflow-hidden relative">
+      {/* Background - Day mode only */}
+      <div className="absolute inset-0 bg-concordia-day -z-20"></div>
+      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none -z-10 mix-blend-overlay"></div>
       
       {/* Background Image - Split and separated */}
       <div className="absolute inset-x-0 bottom-0 h-3/4 pointer-events-none -z-10 flex justify-center items-end">
@@ -39,19 +42,18 @@ export default function GameLayout({ children }: GameLayoutProps) {
                 clipPath: 'polygon(50% 0, 100% 0, 100% 100%, 50% 100%)',
               }}
             />
-            {/* Sherlock Pop-up removed from here */}
           </div>
         </div>
       </div>
 
       {/* Lamps */}
-      <div className="absolute top-1/3 left-10 w-2 h-32 bg-wood-dark dark:bg-black hidden md:block border-l-2 border-white/10">
+      <div className="absolute top-1/3 left-10 w-2 h-32 bg-wood-dark hidden md:block border-l-2 border-white/10">
         <div className="absolute -top-4 -left-3 w-8 h-12 bg-primary-dark/80 border-2 border-black">
           <div className="absolute inset-2 bg-primary rounded-full blur-md lamp-glow"></div>
           <div className="absolute inset-3 bg-white rounded-full opacity-50"></div>
         </div>
       </div>
-      <div className="absolute top-1/3 right-10 w-2 h-32 bg-wood-dark dark:bg-black hidden md:block border-l-2 border-white/10">
+      <div className="absolute top-1/3 right-10 w-2 h-32 bg-wood-dark hidden md:block border-l-2 border-white/10">
         <div className="absolute -top-4 -left-3 w-8 h-12 bg-primary-dark/80 border-2 border-black">
           <div className="absolute inset-2 bg-primary rounded-full blur-md lamp-glow" style={{ animationDelay: '1s' }}></div>
           <div className="absolute inset-3 bg-white rounded-full opacity-50"></div>
@@ -61,13 +63,13 @@ export default function GameLayout({ children }: GameLayoutProps) {
       {/* Header */}
       <header className="pt-8 md:pt-16 pb-4 text-center relative z-10">
         <div className="inline-block relative group cursor-pointer">
-          <h1 className="text-4xl md:text-6xl text-primary dark:text-primary tracking-widest uppercase drop-shadow-[4px_4px_0_rgba(0,0,0,0.8)] transition-colors duration-300 font-display">
+          <h1 className="text-4xl md:text-6xl text-primary tracking-widest uppercase drop-shadow-[4px_4px_0_rgba(0,0,0,0.8)] font-display">
             Sher<span className="text-black">LOST</span>Holmes
           </h1>
           <div className="absolute -right-12 -top-6 text-4xl transform rotate-12 opacity-80 group-hover:scale-110 transition-transform">
             🔍
           </div>
-          <p className="mt-2 text-lg md:text-xl text-stone-700 dark:text-gray-300 font-bold bg-background-light/90 dark:bg-black/60 inline-block px-4 py-1 border-2 border-primary dark:border-primary-dark pixel-cursor shadow-pixel-sm">
+          <p className="mt-2 text-lg md:text-xl text-stone-700 font-bold bg-background-light/90 inline-block px-4 py-1 border-2 border-primary pixel-cursor shadow-pixel-sm">
             EST. 1887 • CONCORDIA LOST & FOUND
           </p>
           
@@ -102,12 +104,12 @@ export default function GameLayout({ children }: GameLayoutProps) {
       </main>
 
       {/* Footer */}
-      <footer className="w-full border-t-4 border-primary-dark dark:border-black bg-stone-800 dark:bg-wood-dark text-white p-2 relative z-20">
+      <footer className="w-full border-t-4 border-primary-dark bg-stone-800 text-white p-2 relative z-20">
         <div className="container mx-auto flex flex-col md:flex-row justify-between items-center text-lg md:text-xl font-bold tracking-wide">
           <div className="flex items-center space-x-4 mb-2 md:mb-0">
-            <div className="flex items-center text-primary dark:text-red-400">
+            <div className="flex items-center text-primary">
               <span className="material-symbols-outlined mr-1 text-base">person</span>
-              <span>[Student_ID]</span>
+              <span>{isSignedIn && studentId ? studentId : '[Student_ID]'}</span>
             </div>
             <div className="h-4 w-0.5 bg-gray-500"></div>
             <div className="text-gray-300">
@@ -115,23 +117,33 @@ export default function GameLayout({ children }: GameLayoutProps) {
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <button className="hover:text-primary flex items-center transition-colors" onClick={toggleDarkMode}>
-              <span className="material-symbols-outlined mr-1">brightness_6</span>
-                Toggle Day/Night
-            </button>
-            <div className="h-4 w-0.5 bg-gray-500"></div>
-            <div className="flex space-x-1">
-              <div className="w-3 h-3 bg-red-500 border border-black"></div>
-              <div className="w-3 h-3 bg-yellow-500 border border-black"></div>
-              <div className="w-3 h-3 bg-green-500 border border-black"></div>
-            </div>
+            {isSignedIn ? (
+              <>
+                <div className="flex items-center text-accent-gold">
+                  <span className="material-symbols-outlined mr-1">badge</span>
+                  <span>Detective {userName}</span>
+                </div>
+                <div className="h-4 w-0.5 bg-gray-500"></div>
+                <SignOutButton>
+                  <button className="hover:text-primary flex items-center transition-colors text-gray-300">
+                    <span className="material-symbols-outlined mr-1">logout</span>
+                    Sign Out
+                  </button>
+                </SignOutButton>
+              </>
+            ) : (
+              <div className="text-gray-300">
+                <span className="material-symbols-outlined mr-1">mystery</span>
+                Guest Detective
+              </div>
+            )}
           </div>
         </div>
         
         {/* News Ticker */}
-        <div className="w-full bg-black text-primary dark:text-red-500 text-base overflow-hidden whitespace-nowrap border-t-2 border-gray-700 mt-2">
+        <div className="w-full bg-black text-primary text-base overflow-hidden whitespace-nowrap border-t-2 border-gray-700 mt-2">
           <div className="inline-block animate-[marquee_20s_linear_infinite] px-4">
-            +++ BREAKING NEWS: THE CHANCELLOR'S GAVEL IS MISSING +++ STINGERS MASCOT SPOTTED IN LIBRARY +++ EXAM SEASON FOG RISING +++ DETECTIVE NEEDED AT 1455 DE MAISONNEUVE W +++ 
+            +++ BREAKING NEWS: THE CHANCELLOR&apos;S GAVEL IS MISSING +++ STINGERS MASCOT SPOTTED IN LIBRARY +++ EXAM SEASON FOG RISING +++ DETECTIVE NEEDED AT 1455 DE MAISONNEUVE W +++ 
           </div>
         </div>
       </footer>
