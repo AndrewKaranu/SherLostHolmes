@@ -17,6 +17,12 @@
   --color-burgundy: #912338;
   --color-burgundy-dark: #5e1624;
   --color-cream: #F5F1E1;
+  --color-concordia-burgundy: #912338;
+  --color-concordia-gold: #EBAF33;
+  --color-parchment: #F5F1E1;
+  --color-desk-wood: #1a120b;
+
+  --font-grotesk: var(--font-space-grotesk), sans-serif;
 
   --font-display: 'VT323', monospace;
   --font-handwriting: 'VT323', monospace;
@@ -188,4 +194,27 @@ body {
 }
 .text-shadow {
     text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+}
+
+.pixel-border {
+  box-shadow: 0 -4px 0 0 #000, 0 4px 0 0 #000, -4px 0 0 0 #000, 4px 0 0 0 #000;
+}
+
+.wood-texture {
+  background-color: #912338;
+  background-image: linear-gradient(rgba(145, 35, 56, 0.95), rgba(94, 22, 36, 1));
+}
+
+.ledger-shadow {
+  box-shadow: 20px 20px 0px rgba(0,0,0,0.2);
+}
+
+.pixelated {
+  image-rendering: pixelated;
+}
+
+.silhouette {
+    mask-image: linear-gradient(to top, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
+    -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
+    opacity: 0.2;
 }

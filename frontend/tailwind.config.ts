@@ -25,11 +25,17 @@ const config: Config = {
         "ink": "#2c1810",
         "burgundy": "#912338",
         "burgundy-dark": "#5e1624",
-        "cream": "#F5F1E1"
+        "cream": "#F5F1E1",
+        // Admin Dashboard specific colors
+        "concordia-burgundy": "#912338",
+        "concordia-gold": "#EBAF33",
+        "parchment": "#F5F1E1",
+        "desk-wood": "#1a120b",
       },
       fontFamily: {
         display: ["'Press Start 2P'", "cursive"],
         handwriting: ["'VT323'", "monospace"],
+        grotesk: ["var(--font-space-grotesk)", "sans-serif"],
       },
       backgroundImage: {
         'concordia-night': "linear-gradient(to bottom, #2E0F15 0%, #4A1A23 60%, #1A0508 100%)",
