@@ -1,0 +1,140 @@
+'use client';
+import { useState, ReactNode } from 'react';
+
+interface GameLayoutProps {
+  children: ReactNode;
+}
+
+export default function GameLayout({ children }: GameLayoutProps) {
+  const toggleDarkMode = () => {
+    document.documentElement.classList.toggle('dark');
+  };
+
+  return (
+    <main className="font-display min-h-screen flex flex-col pixel-cursor overflow-hidden relative transition-colors duration-500">
+      <div className="absolute inset-0 bg-concordia-day dark:bg-concordia-night transition-colors duration-500 -z-20"></div>
+      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 dark:opacity-20 pointer-events-none -z-10 mix-blend-overlay"></div>
+      <div className="scanline hidden dark:block"></div>
+      
+      {/* Background Image - Split and separated */}
+      <div className="absolute inset-x-0 bottom-0 h-3/4 pointer-events-none -z-10 flex justify-center items-end">
+        <div className="relative h-full w-full flex justify-center items-end">
+          {/* Left Building */}
+          <img 
+            src="/concordia_bg.png" 
+            alt="Concordia Left" 
+            className="h-full w-auto object-contain absolute bottom-0 left-1/2"
+            style={{ 
+              clipPath: 'polygon(0 0, 50% 0, 50% 100%, 0 100%)',
+              transform: 'translateX(-50%) translateX(-200px)' 
+            }}
+          />
+          {/* Right Building */}
+          <div className="absolute bottom-0 left-1/2 h-full w-auto" style={{ transform: 'translateX(-50%) translateX(200px)' }}>
+            <img 
+              src="/concordia_bg.png" 
+              alt="Concordia Right" 
+              className="h-full w-auto object-contain"
+              style={{ 
+                clipPath: 'polygon(50% 0, 100% 0, 100% 100%, 50% 100%)',
+              }}
+            />
+            {/* Sherlock Pop-up removed from here */}
+          </div>
+        </div>
+      </div>
+
+      {/* Lamps */}
+      <div className="absolute top-1/3 left-10 w-2 h-32 bg-wood-dark dark:bg-black hidden md:block border-l-2 border-white/10">
+        <div className="absolute -top-4 -left-3 w-8 h-12 bg-primary-dark/80 border-2 border-black">
+          <div className="absolute inset-2 bg-primary rounded-full blur-md lamp-glow"></div>
+          <div className="absolute inset-3 bg-white rounded-full opacity-50"></div>
+        </div>
+      </div>
+      <div className="absolute top-1/3 right-10 w-2 h-32 bg-wood-dark dark:bg-black hidden md:block border-l-2 border-white/10">
+        <div className="absolute -top-4 -left-3 w-8 h-12 bg-primary-dark/80 border-2 border-black">
+          <div className="absolute inset-2 bg-primary rounded-full blur-md lamp-glow" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute inset-3 bg-white rounded-full opacity-50"></div>
+        </div>
+      </div>
+
+      {/* Header */}
+      <header className="pt-8 md:pt-16 pb-4 text-center relative z-10">
+        <div className="inline-block relative group cursor-pointer">
+          <h1 className="text-4xl md:text-6xl text-primary dark:text-primary tracking-widest uppercase drop-shadow-[4px_4px_0_rgba(0,0,0,0.8)] transition-colors duration-300 font-display">
+            Sher<span className="text-black">LOST</span>Holmes
+          </h1>
+          <div className="absolute -right-12 -top-6 text-4xl transform rotate-12 opacity-80 group-hover:scale-110 transition-transform">
+            🔍
+          </div>
+          <p className="mt-2 text-lg md:text-xl text-stone-700 dark:text-gray-300 font-bold bg-background-light/90 dark:bg-black/60 inline-block px-4 py-1 border-2 border-primary dark:border-primary-dark pixel-cursor shadow-pixel-sm">
+            EST. 1887 • CONCORDIA LOST & FOUND
+          </p>
+          
+          {/* Sherlock Standing Next to "S" */}
+          <div className="absolute right-full -mr-16 -top-8 w-64 z-50 pointer-events-none">
+             <img 
+                src="/sherlock_fullOnConcordia.png" 
+                alt="Sherlock Holmes" 
+                className="w-full h-auto drop-shadow-xl"
+              />
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content Area */}
+      <main className="flex-grow flex flex-col items-center justify-start pt-4 relative z-10 w-full max-w-md mx-auto">
+        {/* Top Chains */}
+        <div className="w-full flex justify-between px-16 -mb-4 relative z-20">
+          <div className="flex flex-col items-center">
+            <div className="w-4 h-4 bg-gray-800 border-2 border-gray-600 rounded-full shadow-lg"></div>
+            <div className="w-2 h-16 bg-chain border-x-2 border-black/30"></div>
+          </div>
+          <div className="flex flex-col items-center">
+            <div className="w-4 h-4 bg-gray-800 border-2 border-gray-600 rounded-full shadow-lg"></div>
+            <div className="w-2 h-16 bg-chain border-x-2 border-black/30"></div>
+          </div>
+        </div>
+
+        {/* Content passed from parent */}
+        {children}
+
+      </main>
+
+      {/* Footer */}
+      <footer className="w-full border-t-4 border-primary-dark dark:border-black bg-stone-800 dark:bg-wood-dark text-white p-2 relative z-20">
+        <div className="container mx-auto flex flex-col md:flex-row justify-between items-center text-lg md:text-xl font-bold tracking-wide">
+          <div className="flex items-center space-x-4 mb-2 md:mb-0">
+            <div className="flex items-center text-primary dark:text-red-400">
+              <span className="material-symbols-outlined mr-1 text-base">person</span>
+              <span>[Student_ID]</span>
+            </div>
+            <div className="h-4 w-0.5 bg-gray-500"></div>
+            <div className="text-gray-300">
+                Montreal, 1888
+            </div>
+          </div>
+          <div className="flex items-center space-x-4">
+            <button className="hover:text-primary flex items-center transition-colors" onClick={toggleDarkMode}>
+              <span className="material-symbols-outlined mr-1">brightness_6</span>
+                Toggle Day/Night
+            </button>
+            <div className="h-4 w-0.5 bg-gray-500"></div>
+            <div className="flex space-x-1">
+              <div className="w-3 h-3 bg-red-500 border border-black"></div>
+              <div className="w-3 h-3 bg-yellow-500 border border-black"></div>
+              <div className="w-3 h-3 bg-green-500 border border-black"></div>
+            </div>
+          </div>
+        </div>
+        
+        {/* News Ticker */}
+        <div className="w-full bg-black text-primary dark:text-red-500 text-base overflow-hidden whitespace-nowrap border-t-2 border-gray-700 mt-2">
+          <div className="inline-block animate-[marquee_20s_linear_infinite] px-4">
+            +++ BREAKING NEWS: THE CHANCELLOR'S GAVEL IS MISSING +++ STINGERS MASCOT SPOTTED IN LIBRARY +++ EXAM SEASON FOG RISING +++ DETECTIVE NEEDED AT 1455 DE MAISONNEUVE W +++ 
+          </div>
+        </div>
+      </footer>
+    </main>
+  );
+}

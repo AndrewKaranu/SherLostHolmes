@@ -1,0 +1,191 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #912338;
+  --color-primary-dark: #631726;
+  --color-accent-gold: #C5B358;
+  --color-background-light: #F5F1E1;
+  --color-background-dark: #2E0F15;
+  --color-wood-light: #8D6E63;
+  --color-wood-dark: #4E342E;
+  --color-wood-face: #A1887F;
+  --color-chain: #546E7A;
+  --color-brick-red: #7D3C3C;
+  --color-paper-light: #F5F1E1;
+  --color-paper-dark: #2d2a3d;
+  --color-ink: #2c1810;
+  --color-burgundy: #912338;
+  --color-burgundy-dark: #5e1624;
+  --color-cream: #F5F1E1;
+
+  --font-display: 'VT323', monospace;
+  --font-handwriting: 'VT323', monospace;
+  
+  --background-image-concordia-night: linear-gradient(to bottom, #2E0F15 0%, #4A1A23 60%, #1A0508 100%);
+  --background-image-concordia-day: linear-gradient(to bottom, #F5F1E1 0%, #E6DBC4 100%);
+  --background-image-lined-paper: repeating-linear-gradient(transparent, transparent 31px, #912338 31px, #912338 32px);
+  --background-image-lined-paper-dark: repeating-linear-gradient(transparent, transparent 31px, #4b5563 31px, #4b5563 32px);
+
+  --shadow-pixel: 4px 4px 0px 0px rgba(0,0,0,0.5);
+  --shadow-pixel-sm: 2px 2px 0px 0px rgba(0,0,0,0.3);
+  --shadow-inner-pixel: inset 3px 3px 0px 0px rgba(0,0,0,0.1);
+  --shadow-glow: 0 0 10px #912338, 0 0 20px #912338;
+  
+  /* Also register the custom font family if layout.tsx uses variable */
+  --font-vt323: var(--font-vt323);
+  --font-display: var(--font-vt323), monospace;
+}
+
+.clip-ribbon {
+    clip-path: polygon(0 0, 100% 0, 100% 80%, 50% 100%, 0 80%);
+}
+
+.text-shadow {
+    text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+}
+
+body {
+    image-rendering: pixelated;
+}
+
+.pixel-cursor {
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23912338" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter"><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>'), auto;
+}
+
+.pixel-input {
+    background-color: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-family: var(--font-vt323), monospace;
+    font-size: 1.5rem;
+    line-height: 2rem;
+    padding: 0;
+    width: 100%;
+}
+
+.pixel-input:focus {
+    outline: none;
+    border-bottom: 2px dashed var(--color-primary);
+    box-shadow: none;
+}
+
+.pixel-box {
+    position: relative;
+    border-style: solid;
+    border-width: 4px;
+    box-shadow: inset 4px 4px 0px 0px rgba(255, 255, 255, 0.1), inset -4px -4px 0px 0px rgba(0, 0, 0, 0.3), 4px 4px 0px 0px rgba(0,0,0,0.5);
+}
+
+@keyframes swing {
+    0% { transform: rotate(0deg); }
+    25% { transform: rotate(1deg); }
+    50% { transform: rotate(0deg); }
+    75% { transform: rotate(-1deg); }
+    100% { transform: rotate(0deg); }
+}
+
+.hanging-sign {
+    animation: swing 6s ease-in-out infinite;
+    transform-origin: top center;
+}
+
+.scanline {
+    width: 100%;
+    height: 100px;
+    z-index: 10;
+    background: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(255, 255, 255, 0.02) 50%, rgba(0,0,0,0) 100%);
+    opacity: 0.1;
+    background-size: 100% 4px;
+    position: absolute;
+    pointer-events: none;
+    animation: scanline 10s linear infinite;
+    top: 0;
+}
+
+@keyframes scanline {
+    0% { top: -100px; }
+    100% { top: 100%; }
+}
+
+@keyframes flicker {
+    0%, 100% { opacity: 0.8; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.95); }
+    70% { opacity: 0.9; transform: scale(1.05); }
+}
+
+.lamp-glow {
+    animation: flicker 4s infinite alternate;
+}
+
+.building-base {
+    position: relative;
+    background-color: #5D4037;
+}
+
+.window-grid {
+    background-image: 
+        linear-gradient(rgba(0,0,0,0.2) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,0,0,0.2) 1px, transparent 1px);
+    background-size: 8px 12px;
+}
+
+.hall-windows {
+    background-image: linear-gradient(90deg, #d4d4d4 2px, transparent 2px), linear-gradient(#d4d4d4 2px, transparent 2px);
+    background-size: 10px 15px;
+    background-color: #78716c;
+}
+
+.ev-glass {
+    background: linear-gradient(135deg, rgba(135,206,235,0.4) 0%, rgba(70,130,180,0.4) 100%);
+    background-size: 10px 10px;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+}
+
+.ev-grid {
+    background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+    background-size: 12px 12px;
+}
+
+/* User requested styles */
+::-webkit-scrollbar {
+    width: 12px;
+}
+::-webkit-scrollbar-track {
+    background: #5e1624; 
+}
+::-webkit-scrollbar-thumb {
+    background: #912338; 
+    border: 2px solid #5e1624;
+}
+.pixel-input {
+    background-color: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-size: 1.5rem;
+    line-height: 2rem;
+    padding: 0;
+    margin-bottom: 8px;
+    font-family: var(--font-vt323), monospace;
+}
+.pixel-input:focus {
+    outline: none;
+    border-bottom: 2px dashed #912338;
+    box-shadow: none;
+}
+.scanlines {
+    background: linear-gradient(
+        to bottom,
+        rgba(255,255,255,0),
+        rgba(255,255,255,0) 50%,
+        rgba(0,0,0,0.1) 50%,
+        rgba(0,0,0,0.1)
+    );
+    background-size: 100% 4px;
+}
+.clip-ribbon {
+    clip-path: polygon(0 0, 100% 0, 100% 80%, 50% 100%, 0 80%);
+}
+.text-shadow {
+    text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+}
