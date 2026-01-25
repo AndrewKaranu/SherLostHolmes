@@ -221,7 +221,8 @@ class MatchSessionBase(BaseModel):
         "probable_match",
         "confirmed_match",
         "rejected",
-        "needs_review"
+        "needs_review",
+        "fraud_detected"
     ] = "in_progress"
     
     # Conversation history with orchestrator

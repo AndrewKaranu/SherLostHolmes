@@ -327,6 +327,10 @@ def lineup_node(state: MatchingState) -> dict:
         updates["messages"] = [AIMessage(content="😔 No suspects to present. Your item might not be in our system yet.")]
         return updates
     
+    # Determine available letters based on lineup size
+    num_suspects = len(state.lineup)
+    available_letters = [chr(65 + i) for i in range(num_suspects)]  # A, B, C, D, E, F...
+    
     # Build lineup presentation
     presentation = "🔦 **THE BLIND LINEUP**\n"
     presentation += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
@@ -343,7 +347,8 @@ def lineup_node(state: MatchingState) -> dict:
         presentation += f"📸 _{blur_reason}_\n\n"
     
     presentation += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-    presentation += "**Which suspect would you like to interrogate?** Reply with the letter (A, B, C, D, or E)."
+    letter_options = ", ".join(available_letters[:-1]) + f", or {available_letters[-1]}" if len(available_letters) > 1 else available_letters[0]
+    presentation += f"**Which suspect would you like to interrogate?** Reply with the letter ({letter_options})."
     
     updates["messages"] = [AIMessage(content=presentation)]
     updates["awaiting_user_input"] = True
@@ -356,17 +361,22 @@ def process_lineup_selection(state: MatchingState, user_message: str) -> dict:
     """Process user's suspect selection."""
     updates = {}
     
+    # Determine available letters based on lineup size
+    num_suspects = len(state.lineup)
+    available_letters = [chr(65 + i) for i in range(num_suspects)]  # A, B, C, D, E, F...
+    
     # Extract letter from user message
     user_message_upper = user_message.upper().strip()
     selected_letter = None
     
-    for letter in ["A", "B", "C", "D", "E"]:
+    for letter in available_letters:
         if letter in user_message_upper:
             selected_letter = letter
             break
     
     if not selected_letter:
-        updates["messages"] = [AIMessage(content="Please select a suspect by entering their letter (A, B, C, D, or E).")]
+        letter_options = ", ".join(available_letters[:-1]) + f", or {available_letters[-1]}" if len(available_letters) > 1 else available_letters[0]
+        updates["messages"] = [AIMessage(content=f"Please select a suspect by entering their letter ({letter_options}).")]
         return updates
     
     # Find the selected suspect
@@ -378,6 +388,21 @@ def process_lineup_selection(state: MatchingState, user_message: str) -> dict:
     
     if not selected_suspect:
         updates["messages"] = [AIMessage(content=f"Suspect {selected_letter} not found. Please choose from the available suspects.")]
+        return updates
+    
+    # FRAUD DETECTION: Check if user selected the decoy item
+    if selected_suspect.get("is_decoy", False):
+        updates["stage"] = "complete"
+        updates["match_status"] = "fraud_detected"
+        updates["match_score"] = 0.0
+        updates["selected_suspect_id"] = selected_suspect["suspect_id"]
+        updates["selected_suspect_letter"] = selected_letter
+        updates["awaiting_user_input"] = False
+        updates["next_action"] = None
+        
+        # Log fraud attempt (the message is vague to not reveal the detection mechanism)
+        updates["messages"] = [AIMessage(content="🚫 **INVESTIGATION TERMINATED**\n\n*Our investigation has concluded that this claim cannot be verified at this time.*\n\nIf you believe this is an error, please visit the lost and found office in person with valid identification.")]
+        
         return updates
     
     updates["selected_suspect_id"] = selected_suspect["suspect_id"]

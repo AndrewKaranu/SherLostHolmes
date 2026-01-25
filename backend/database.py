@@ -39,13 +39,17 @@ def get_matches_collection():
 def get_users_collection():
     return get_database()["users"]
 
+def get_lockers_collection():
+    return get_database()["lockers"]
+
 
 def get_collections():
     return {
         "items": get_items_collection(),
         "inquiries": get_inquiries_collection(),
         "matches": get_matches_collection(),
-        "users": get_users_collection()
+        "users": get_users_collection(),
+        "lockers": get_lockers_collection()
     }
 
 
@@ -84,7 +88,14 @@ def setup_indexes():
         users.create_index([("email", ASCENDING)], unique=True)
         users.create_index([("clerk_id", ASCENDING)], unique=True)
         users.create_index([("student_id", ASCENDING)], sparse=True, name="student_id_sparse")
-        
+
+        # Lockers indexes
+        lockers = get_lockers_collection()
+        lockers.create_index([("locker_number", ASCENDING)], unique=True)
+        lockers.create_index([("status", ASCENDING)])
+        lockers.create_index([("item_id", ASCENDING)], sparse=True)
+        lockers.create_index([("match_id", ASCENDING)], sparse=True)
+
         return {"status": "success", "message": "Indexes created successfully!"}
     except Exception as e:
         return {"status": "warning", "message": f"Indexes may already exist: {str(e)}"}

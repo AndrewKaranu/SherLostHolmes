@@ -4,6 +4,7 @@ Individual tool functions used by the matching orchestrator agent.
 """
 import os
 import math
+import random
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Any, Tuple
 from bson import ObjectId
@@ -407,27 +408,119 @@ def get_top_candidates(scored_items: List[dict], top_k: int = 5) -> List[dict]:
 
 
 # ============== BLIND LINEUP ==============
+
+def get_random_decoy_item(exclude_ids: List[str], exclude_category: str = None) -> Optional[dict]:
+    """
+    Fetch a random item to use as a decoy for fraud detection.
+    Excludes the candidate items and optionally items from the same category.
+    """
+    items_collection = get_items_collection()
+    
+    # Build exclusion filter
+    exclude_object_ids = []
+    for id_str in exclude_ids:
+        try:
+            exclude_object_ids.append(ObjectId(id_str))
+        except:
+            pass
+    
+    query = {
+        "_id": {"$nin": exclude_object_ids},
+        "status": "unclaimed"
+    }
+    
+    # Prefer items from different categories to make decoy more obvious to real owner
+    if exclude_category:
+        query["category"] = {"$ne": exclude_category}
+    
+    # Get random item using aggregation
+    pipeline = [
+        {"$match": query},
+        {"$sample": {"size": 1}}
+    ]
+    
+    result = list(items_collection.aggregate(pipeline))
+    if result:
+        item = result[0]
+        item["_id"] = str(item["_id"])
+        return item
+    
+    # Fallback: if no different category, get any random item
+    if exclude_category:
+        del query["category"]
+        result = list(items_collection.aggregate([
+            {"$match": query},
+            {"$sample": {"size": 1}}
+        ]))
+        if result:
+            item = result[0]
+            item["_id"] = str(item["_id"])
+            return item
+    
+    return None
+
+
 def generate_blind_lineup(candidates: List[dict]) -> List[dict]:
     """
     Generate the blind lineup presentation for top candidates.
-    Each candidate gets a letter (A-E) and shows only blurred info.
+    Each candidate gets a letter (A-F) and shows only blurred info.
+    
+    FRAUD DETECTION: One random decoy item is added to catch bad actors.
+    A legitimate owner would never select an item that isn't theirs.
     """
     lineup = []
     
-    for i, candidate in enumerate(candidates):
+    # Get IDs of real candidates
+    candidate_ids = []
+    main_category = None
+    for candidate in candidates:
         item = candidate["item"]
+        item_id = item.get("_id") or str(item.get("id"))
+        candidate_ids.append(item_id)
+        if not main_category:
+            main_category = item.get("category")
+    
+    # Get a random decoy item for fraud detection
+    decoy_item = get_random_decoy_item(candidate_ids, main_category)
+    
+    # Create combined list with decoy
+    all_items = []
+    
+    for candidate in candidates:
+        item = candidate["item"]
+        all_items.append({
+            "item": item,
+            "score": candidate.get("combined_score", 0.0),
+            "is_decoy": False
+        })
+    
+    # Add decoy if found
+    if decoy_item:
+        all_items.append({
+            "item": decoy_item,
+            "score": 0.0,
+            "is_decoy": True
+        })
+    
+    # Shuffle the lineup so decoy position is random
+    random.shuffle(all_items)
+    
+    # Build the lineup
+    for i, entry in enumerate(all_items):
+        item = entry["item"]
         ai_data = item.get("ai_data", {})
         blind_display = ai_data.get("blind_lineup_display", {})
         persona = ai_data.get("persona_engine", {})
         
         lineup.append({
             "suspect_id": item.get("_id") or str(item.get("id")),
-            "suspect_letter": chr(65 + i),  # A, B, C, D, E
+            "suspect_letter": chr(65 + i),  # A, B, C, D, E, F
             "blurred_image": item.get("image_url_blurred"),
             "teaser": blind_display.get("public_teaser", f"A mysterious {item.get('category', 'item')} awaits..."),
             "blur_reason": blind_display.get("blur_reason", "Identity protection protocol active"),
             "character_name": persona.get("character_name", f"Suspect {chr(65 + i)}"),
-            "semantic_score": candidate.get("combined_score", 0.0)  # Hidden from user
+            "semantic_score": entry["score"],  # Hidden from user
+            "is_decoy": entry["is_decoy"]  # For backend tracking only, NOT sent to frontend
         })
     
     return lineup

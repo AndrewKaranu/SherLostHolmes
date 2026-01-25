@@ -54,14 +54,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </div>
           
           <div className="flex flex-1 justify-end gap-6 items-center">
-            <div className="flex min-w-[150px] flex-col gap-0 px-4 py-2 bg-burgundy-dark/80 border-2 border-concordia-gold/30 rounded-sm shadow-inner-pixel">
-              <p className="text-concordia-gold text-[9px] font-bold uppercase tracking-widest">Active Cases</p>
-              <div className="flex items-center gap-3">
-                <p className="text-parchment text-2xl font-bold font-display">42</p>
-                <span className="material-symbols-outlined text-concordia-gold text-sm animate-pulse">assignment_late</span>
-              </div>
-            </div>
-            
             <div className="flex gap-3">
               <button className="flex items-center justify-center rounded-sm h-10 w-10 bg-white/5 hover:bg-white/10 text-parchment transition-all border-2 border-parchment/10 shadow-pixel-sm hover:translate-y-px hover:shadow-none">
                 <span className="material-symbols-outlined">search</span>
