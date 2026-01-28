@@ -47,11 +47,12 @@ export default function CompleteProfilePage() {
       });
 
       // Sync to MongoDB
+      const apiUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
       const email = user?.primaryEmailAddress?.emailAddress;
       
       if (email && user?.id) {
         await fetch(
-          `http://127.0.0.1:8000/api/users/sync?clerk_id=${user.id}&email=${encodeURIComponent(email)}&student_id=${studentId.trim()}`,
+          `${apiUrl}/api/users/sync?clerk_id=${user.id}&email=${encodeURIComponent(email)}&student_id=${studentId.trim()}`,
           { method: 'POST' }
         );
       }

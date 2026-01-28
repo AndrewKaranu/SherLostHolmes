@@ -33,9 +33,14 @@ const config: Config = {
         "desk-wood": "#1a120b",
       },
       fontFamily: {
+<<<<<<< HEAD:frontend/tailwind.config.ts
+        display: ["ui-monospace", "SF Mono", "Cascadia Code", "monospace"],
+        handwriting: ["ui-monospace", "SF Mono", "monospace"],
+=======
         display: ["'Press Start 2P'", "cursive"],
         handwriting: ["'VT323'", "monospace"],
         grotesk: ["var(--font-space-grotesk)", "sans-serif"],
+>>>>>>> origin/main:frontend/tailwind.config.ts.bak
       },
       backgroundImage: {
         'concordia-night': "linear-gradient(to bottom, #2E0F15 0%, #4A1A23 60%, #1A0508 100%)",
