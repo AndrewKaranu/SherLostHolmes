@@ -452,7 +452,7 @@ export default function EvidenceInventoryLedger() {
                             <div className="text-[10px] text-concordia-burgundy/80 mt-1 uppercase">{item.category}</div>
                           </td>
                           <td className="px-6 py-4">
-                            {dateInfo.date} <br /> <span className="text-[10px] opacity-60">{dateInfo.time}</span>
+                            {typeof dateInfo === 'string' ? dateInfo : <>{dateInfo.date} <br /> <span className="text-[10px] opacity-60">{dateInfo.time}</span></>}
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-1">
