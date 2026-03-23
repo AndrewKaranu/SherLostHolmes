@@ -27,9 +27,10 @@ _origins = [
     "http://127.0.0.1:3000",
     "http://127.0.0.1:3001",
 ]
-_frontend_url = os.getenv("FRONTEND_URL")
-if _frontend_url:
-    _origins.append(_frontend_url.rstrip("/"))
+for _url in os.getenv("FRONTEND_URLS", "").split(","):
+    _url = _url.strip().rstrip("/")
+    if _url:
+        _origins.append(_url)
 
 app.add_middleware(
     CORSMiddleware,
