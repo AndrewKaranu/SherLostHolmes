@@ -1,3 +1,4 @@
+import os
 from typing import List, Dict, Optional
 from fastapi import FastAPI, BackgroundTasks, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,14 +21,19 @@ from email_service import send_approval_email, send_denial_email, send_email
 app = FastAPI(title="SherLostHolmes API", version="1.0.0")
 
 # Configure CORS
+_origins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
+]
+_frontend_url = os.getenv("FRONTEND_URL")
+if _frontend_url:
+    _origins.append(_frontend_url.rstrip("/"))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:3001",
-    ],
+    allow_origins=_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

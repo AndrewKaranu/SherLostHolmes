@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
+
 export default function CompleteProfilePage() {
   const { isLoaded, isSignedIn, user } = useUser();
   const router = useRouter();
@@ -51,7 +53,7 @@ export default function CompleteProfilePage() {
       
       if (email && user?.id) {
         await fetch(
-          `http://127.0.0.1:8000/api/users/sync?clerk_id=${user.id}&email=${encodeURIComponent(email)}&student_id=${studentId.trim()}`,
+          `${API_URL}/api/users/sync?clerk_id=${user.id}&email=${encodeURIComponent(email)}&student_id=${studentId.trim()}`,
           { method: 'POST' }
         );
       }

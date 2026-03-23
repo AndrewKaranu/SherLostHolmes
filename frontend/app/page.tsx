@@ -9,10 +9,12 @@ import GameLayout from '@/components/GameLayout';
 import HangingSign from '@/components/HangingSign';
 import ChainLink from '@/components/ChainLink';
 
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
+
 export default function Home() {
   const { isLoaded, isSignedIn, user } = useUser();
   const router = useRouter();
-  
+
   // State for backend connectivity tracking
   const [backendMessage, setBackendMessage] = useState('Loading...');
   const [dbStatus, setDbStatus] = useState('Checking...');
@@ -20,7 +22,7 @@ export default function Home() {
 
   // 1. Test backend and database connection
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/api/data')
+    fetch(`${API_URL}/api/data`)
       .then((res) => res.json())
       .then((data) => setBackendMessage(data.data))
       .catch((err) => {
@@ -28,7 +30,7 @@ export default function Home() {
         setBackendMessage('Error connecting to backend');
       });
 
-    fetch('http://127.0.0.1:8000/api/db-test')
+    fetch(`${API_URL}/api/db-test`)
       .then((res) => res.json())
       .then((data) => setDbStatus(data.message))
       .catch((err) => {
@@ -53,7 +55,7 @@ export default function Home() {
       const studentId = user.unsafeMetadata?.studentId as string | undefined;
       
       if (email && studentId) {
-        fetch(`http://127.0.0.1:8000/api/users/sync?clerk_id=${user.id}&email=${encodeURIComponent(email)}&student_id=${studentId}`, {
+        fetch(`${API_URL}/api/users/sync?clerk_id=${user.id}&email=${encodeURIComponent(email)}&student_id=${studentId}`, {
           method: 'POST',
         })
           .then((res) => res.json())
