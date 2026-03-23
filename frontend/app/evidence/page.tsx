@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, ChangeEvent } from 'react';
 import { useUser } from '@clerk/nextjs';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace(/\/$/, '');
 
 // Types
 interface Message {

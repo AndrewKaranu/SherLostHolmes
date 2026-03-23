@@ -261,7 +261,7 @@ export default function EvidenceInventoryLedger() {
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+  const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
 
   // Fetch items from backend
   useEffect(() => {
