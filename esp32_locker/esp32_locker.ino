@@ -5,7 +5,7 @@
  * Hardware:
  * - XIAO ESP32-S3
  * - Servo motor for lock mechanism
- * - CardKB I2C keyboard for code entry
+ * - Web UI hosted on ESP32 for code entry
  *
  * Backend Integration:
  * - Fetches password from API on startup and periodically
@@ -19,6 +19,7 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
+#include <WebServer.h>
 
 // ==================== CONFIGURATION ====================
 
@@ -32,7 +33,6 @@ const int LOCKER_NUMBER = 1;
 
 // Hardware Pins
 const int SERVO_PIN = 1;           // GPIO 1 (D0) for Servo
-const int CARDKB_ADDR = 0x5F;      // I2C address for CardKB
 
 // Servo Positions
 const int SERVO_LOCKED = 110;      // Locked position
@@ -56,6 +56,14 @@ unsigned long unlockStartTime = 0;
 bool isUnlocked = false;
 bool wifiConnecting = false;
 unsigned long lastWifiAttempt = 0;
+WebServer webServer(80);
+
+// ==================== FUNCTION PROTOTYPES ====================
+
+void setupWebServer();
+void handleWebRoot();
+void handleWebSubmit();
+void sendWebPage(const String& message = "");
 
 // ==================== SETUP ====================
 
@@ -68,9 +76,6 @@ void setup() {
   Serial.println("   SHERLOSTHOLMES LOCKER SYSTEM");
   Serial.println("   Locker #" + String(LOCKER_NUMBER));
   Serial.println("========================================");
-
-  // Initialize I2C for CardKB
-  Wire.begin(5, 6); // XIAO ESP32-S3 I2C pins: SDA=5, SCL=6
 
   // Initialize Servo
   ESP32PWM::allocateTimer(0);
@@ -87,6 +92,9 @@ void setup() {
 
   // Connect to WiFi
   connectWiFi();
+
+  // Start local web interface
+  setupWebServer();
 
   // Fetch initial password from backend
   if (isConnected) {
@@ -109,6 +117,7 @@ void loop() {
       Serial.println("\n[WIFI] Connected!");
       Serial.print("[WIFI] IP: ");
       Serial.println(WiFi.localIP());
+      Serial.println("[WEB] Open: http://" + WiFi.localIP().toString());
       fetchLockerInfo();
     }
   } else {
@@ -128,8 +137,8 @@ void loop() {
     fetchLockerInfo();
   }
 
-  // Handle keyboard input
-  handleKeyboardInput();
+  // Handle web UI requests
+  webServer.handleClient();
 
   // Check if unlock duration has expired
   if (isUnlocked && (millis() - unlockStartTime > UNLOCK_DURATION)) {
@@ -179,6 +188,7 @@ void connectWiFi() {
     Serial.println("\n[WIFI] Connected!");
     Serial.print("[WIFI] IP: ");
     Serial.println(WiFi.localIP());
+    Serial.println("[WEB] Open: http://" + WiFi.localIP().toString());
   } else {
     isConnected = false;
     wifiConnecting = false;
@@ -350,30 +360,82 @@ void resetLockerAfterCollection() {
   http.end();
 }
 
-// ==================== KEYBOARD FUNCTIONS ====================
+// ==================== WEB UI FUNCTIONS ====================
 
-void handleKeyboardInput() {
-  Wire.requestFrom(CARDKB_ADDR, 1);
+void setupWebServer() {
+  webServer.on("/", HTTP_GET, handleWebRoot);
+  webServer.on("/submit", HTTP_POST, handleWebSubmit);
+  webServer.onNotFound([]() {
+    webServer.sendHeader("Location", "/");
+    webServer.send(303);
+  });
 
-  while (Wire.available()) {
-    char c = Wire.read();
+  webServer.begin();
+  Serial.println("[WEB] Web server started on port 80");
+}
 
-    if (c != 0) {
-      if (c == 0x0D) { // Enter key
-        processCode();
-      }
-      else if (c == 0x08) { // Backspace
-        if (inputBuffer.length() > 0) {
-          inputBuffer.remove(inputBuffer.length() - 1);
-          Serial.println("\n[INPUT] " + getMaskedInput());
-        }
-      }
-      else if (c >= '0' && c <= '9') { // Only accept digits
-        inputBuffer += c;
-        Serial.print("*");
-      }
+void handleWebRoot() {
+  sendWebPage();
+}
+
+void handleWebSubmit() {
+  String enteredCode = "";
+
+  if (webServer.hasArg("code")) {
+    enteredCode = webServer.arg("code");
+  }
+
+  enteredCode.trim();
+
+  bool digitsOnly = enteredCode.length() > 0;
+  for (unsigned int i = 0; i < enteredCode.length(); i++) {
+    if (enteredCode[i] < '0' || enteredCode[i] > '9') {
+      digitsOnly = false;
+      break;
     }
   }
+
+  if (!digitsOnly) {
+    sendWebPage("Invalid input. Please enter digits only.");
+    return;
+  }
+
+  inputBuffer = enteredCode;
+  processCode();
+
+  if (isUnlocked) {
+    sendWebPage("Access granted. Locker unlocked.");
+  } else {
+    sendWebPage("Access denied. Please try again.");
+  }
+}
+
+void sendWebPage(const String& message) {
+  String html = "<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width, initial-scale=1'>";
+  html += "<title>SherLostHolmes Locker</title>";
+  html += "<style>body{font-family:Arial,sans-serif;max-width:420px;margin:24px auto;padding:16px;background:#f5f1e1;color:#2e0f15;}";
+  html += "h1{font-size:1.4rem;margin-bottom:8px;}";
+  html += ".card{background:#fff;border:2px solid #912338;padding:16px;border-radius:8px;}";
+  html += "label{display:block;font-weight:700;margin-bottom:8px;}input{width:100%;padding:10px;font-size:1.2rem;margin-bottom:12px;box-sizing:border-box;}";
+  html += "button{width:100%;padding:12px;background:#912338;color:#fff;border:none;font-size:1rem;font-weight:700;border-radius:6px;cursor:pointer;}";
+  html += ".meta{margin-top:12px;font-size:.9rem;opacity:.85;}";
+  html += ".msg{margin:10px 0;padding:10px;border-radius:6px;background:#efe3bf;font-weight:700;}";
+  html += "</style></head><body>";
+  html += "<div class='card'><h1>SherLostHolmes Locker #" + String(LOCKER_NUMBER) + "</h1>";
+
+  if (message.length() > 0) {
+    html += "<div class='msg'>" + message + "</div>";
+  }
+
+  html += "<form method='POST' action='/submit'>";
+  html += "<label for='code'>Enter locker password</label>";
+  html += "<input id='code' name='code' type='password' inputmode='numeric' pattern='[0-9]*' maxlength='12' autofocus required>";
+  html += "<button type='submit'>Unlock Locker</button></form>";
+  html += "<div class='meta'>Status: " + lockerStatus + "</div>";
+  html += "<div class='meta'>WiFi: " + String(isConnected ? "Connected" : "Disconnected") + "</div>";
+  html += "</div></body></html>";
+
+  webServer.send(200, "text/html", html);
 }
 
 void processCode() {
@@ -470,5 +532,5 @@ void printStatus() {
 }
 
 void printPrompt() {
-  Serial.println("\nEnter 4-digit code:");
+  Serial.println("\nOpen ESP32 IP in browser and enter locker code.");
 }
