@@ -9,9 +9,9 @@ interface HangingSignProps {
 export default function HangingSign({ icon, title, delay, href, onClick }: HangingSignProps) {
   const content = (
     <div className="pixel-box bg-primary border-primary-dark p-1 transition-transform group-hover:-translate-y-1 group-active:translate-y-1">
-      <div className="border-2 border-dashed border-accent-gold/40 px-3 py-3 sm:px-4 sm:py-4 grid grid-cols-[auto,1fr,auto] items-center gap-2 sm:gap-4 bg-primary">
-        <span className="material-symbols-outlined text-xl sm:text-2xl text-background-light group-hover:text-accent-gold">{icon}</span>
-        <span className="text-base sm:text-xl md:text-2xl text-background-light uppercase tracking-wide sm:tracking-wider text-center group-hover:text-accent-gold transition-colors drop-shadow-md">{title}</span>
+      <div className="border-2 border-dashed border-accent-gold/40 px-2.5 py-2 sm:px-4 sm:py-4 grid grid-cols-[auto,1fr,auto] items-center gap-2 sm:gap-4 bg-primary">
+        <span className="material-symbols-outlined text-lg sm:text-2xl text-background-light group-hover:text-accent-gold">{icon}</span>
+        <span className="text-sm sm:text-xl md:text-2xl text-background-light uppercase tracking-wide sm:tracking-wider text-center group-hover:text-accent-gold transition-colors drop-shadow-md">{title}</span>
         <span className="material-symbols-outlined text-xl sm:text-2xl text-background-light opacity-0 group-hover:opacity-100 hidden sm:inline-flex">arrow_forward</span>
       </div>
       <div className="absolute top-0 left-0 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-accent-gold border border-black"></div>
@@ -23,7 +23,7 @@ export default function HangingSign({ icon, title, delay, href, onClick }: Hangi
 
   return (
     <>
-      <div className="hanging-sign w-full px-2 sm:px-4 mb-2 sm:mb-3" style={{ animationDelay: delay }}>
+      <div className="hanging-sign w-full px-2 sm:px-4 mb-1.5 sm:mb-3" style={{ animationDelay: delay }}>
         {href ? (
           <a href={href} className="w-full group focus:outline-none block">
             {content}

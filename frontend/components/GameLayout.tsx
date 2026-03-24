@@ -28,8 +28,17 @@ export default function GameLayout({ children }: GameLayoutProps) {
       <div className="absolute inset-0 bg-concordia-day -z-20"></div>
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none -z-10 mix-blend-overlay"></div>
       
-      {/* Background Image - Split and separated */}
-      <div className="absolute inset-x-0 bottom-0 h-[48vh] sm:h-3/4 pointer-events-none -z-10 flex justify-center items-end">
+      {/* Background Image - Mobile */}
+      <div className="absolute inset-x-0 bottom-0 h-[32vh] sm:hidden pointer-events-none -z-10 flex items-end justify-center overflow-hidden">
+        <img
+          src="/concordia_bg_mobile.png"
+          alt="Concordia Campus"
+          className="w-full h-full object-cover object-bottom"
+        />
+      </div>
+
+      {/* Background Image - Desktop split and separated */}
+      <div className="hidden sm:flex absolute inset-x-0 bottom-0 h-[48vh] sm:h-3/4 pointer-events-none -z-10 justify-center items-end">
         <div className="relative h-full w-full flex justify-center items-end">
           {/* Left Building */}
           <img 
@@ -82,6 +91,19 @@ export default function GameLayout({ children }: GameLayoutProps) {
             EST. 1887 • CONCORDIA LOST & FOUND
           </p>
 
+          {/* Mobile mascot */}
+          <div
+            className={`sm:hidden mt-3 flex justify-center ${isSignedIn ? 'cursor-pointer active:scale-95 transition-transform' : 'pointer-events-none'}`}
+            onClick={handleSherlockClick}
+            title={isSignedIn ? 'Access Admin Panel' : undefined}
+          >
+            <img
+              src="/sherlock_fullOnConcordia.png"
+              alt="Sherlock Holmes"
+              className="w-24 h-auto drop-shadow-lg"
+            />
+          </div>
+
           {/* Sherlock Standing Next to "S" - hidden on mobile to prevent overflow */}
           <div
             className={`hidden md:block absolute right-full -mr-16 -top-8 w-48 lg:w-64 z-50 ${isSignedIn ? 'cursor-pointer hover:scale-105 transition-transform' : 'pointer-events-none'}`}
@@ -98,16 +120,16 @@ export default function GameLayout({ children }: GameLayoutProps) {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-grow flex flex-col items-center justify-start pt-3 sm:pt-4 relative z-10 w-full max-w-xs sm:max-w-md md:max-w-lg mx-auto">
+      <main className="flex-grow flex flex-col items-center justify-start pt-1 sm:pt-4 relative z-10 w-full max-w-[22rem] sm:max-w-md md:max-w-lg mx-auto">
         {/* Top Chains */}
-        <div className="w-full flex justify-between px-8 sm:px-16 -mb-4 relative z-20">
+        <div className="w-full flex justify-between px-10 sm:px-16 -mb-3 sm:-mb-4 relative z-20">
           <div className="flex flex-col items-center">
-            <div className="w-4 h-4 bg-gray-800 border-2 border-gray-600 rounded-full shadow-lg"></div>
-            <div className="w-2 h-16 bg-chain border-x-2 border-black/30"></div>
+            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-800 border-2 border-gray-600 rounded-full shadow-lg"></div>
+            <div className="w-1.5 sm:w-2 h-12 sm:h-16 bg-chain border-x-2 border-black/30"></div>
           </div>
           <div className="flex flex-col items-center">
-            <div className="w-4 h-4 bg-gray-800 border-2 border-gray-600 rounded-full shadow-lg"></div>
-            <div className="w-2 h-16 bg-chain border-x-2 border-black/30"></div>
+            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-800 border-2 border-gray-600 rounded-full shadow-lg"></div>
+            <div className="w-1.5 sm:w-2 h-12 sm:h-16 bg-chain border-x-2 border-black/30"></div>
           </div>
         </div>
 
