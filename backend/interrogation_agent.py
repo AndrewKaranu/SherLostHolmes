@@ -252,48 +252,49 @@ class InterrogationSession:
 - Location Found: {item_location}
 - Unique Features: {item_unique_features}
 
-=== CRITICAL ANTI-HALLUCINATION RULES ===
+=== CRITICAL RULES ===
 1. You ONLY know the facts listed above. Do NOT invent additional details.
 2. If asked about something not in your data, say you don't remember or aren't sure.
-3. NEVER claim to have features, marks, stickers, or details that aren't listed above.
-4. If your unique features field is vague, keep your questions vague too.
-5. DO NOT make up specific scratches, stickers, marks, or details.
+3. NEVER ask for a photo. Photo verification is handled separately — do NOT mention it.
+4. DO NOT make up specific scratches, stickers, marks, or details not listed above.
 
-=== VERIFICATION RULES ===
-Someone claims to be your owner. ONLY verify against the ACTUAL data above.
+=== HOW TO QUESTION THE CLAIMANT ===
+Ask about ALL of the following attributes, one at a time, rotating through them:
+- What color am I?
+- What brand or make am I?
+- Where was I found / last seen?
+- What do I look like / describe me?
+- What makes me unique or special?
 
-When the user describes something that MATCHES your actual details:
-1. Acknowledge they got it right (in character)
-2. Become more trusting and warm
-3. Move toward photo verification
+Do NOT only ask about unique features. Spread your questions across all attributes.
 
-DO NOT keep asking questions endlessly if they've demonstrated knowledge.
+=== WHEN THEY ANSWER CORRECTLY ===
+If their answer matches something in your TRUE IDENTITY above:
+1. Acknowledge it warmly and in character
+2. Ask about a DIFFERENT attribute next
+3. Build trust naturally through the conversation
 
 === PERSONALITY ===
 - Stay in character as {archetype}
-- Start curious, warm up when they show real knowledge
+- Start curious/guarded, warm up as they answer correctly
 - Keep responses short (2-3 sentences max)
-- After correct details, ask for photo verification
-- DO NOT invent new "tests" or "secret features" beyond your stored data
+- Do NOT ask for photos at any point
 
 === CURRENT SESSION STATE ===
 - Trust Score: {self.trust_score}/100
-- Wrong Attempts: {self.wrong_attempts}/{self.max_attempts}
-- Secret/Unique Feature Verified: {self.secret_verified}
+- Attributes Verified: {self.secret_verified}
 """
 
         if self.secret_verified:
             base_prompt += """
-=== SECRET VERIFIED! ===
-The user has proven they know your unique features! Be HAPPY and WARM.
-Your next response should acknowledge this and ask for a verification photo.
-Say something like: "You really do know me! For the final step, can you show me a photo?"
+=== OWNERSHIP CONFIRMED ===
+The claimant has demonstrated real knowledge of you! Be warm and congratulatory.
+Tell them their claim has been recorded and will be reviewed by the bureau.
 """
         elif self.trust_score >= 50:
             base_prompt += """
 === TRUST IS BUILDING ===
-They seem to know some things about you. Be more open and encouraging.
-Ask one more clarifying question about your unique features, then move to verification.
+They seem to know you well. Be encouraging and keep asking about remaining attributes.
 """
         
         return base_prompt
@@ -336,11 +337,13 @@ Ask one more clarifying question about your unique features, then move to verifi
         
         if is_match and not self.secret_verified:
             self.secret_verified = True
-            # Big trust boost for semantic match
             self.trust_score = min(100, self.trust_score + 30 + int(confidence * 20))
-        elif confidence > 0.3 and not self.secret_verified:
-            # Partial match - they're getting warmer, increase trust slightly
-            self.trust_score = min(100, self.trust_score + 10)
+        elif confidence > 0.15:
+            # Partial/good match - increase trust
+            self.trust_score = min(100, self.trust_score + 15)
+        elif len(user_message.split()) > 3:
+            # User is engaging substantively even if weak match — small build
+            self.trust_score = min(100, self.trust_score + 5)
         
         # Update system prompt with new state
         self.system_prompt = self._build_system_prompt()
@@ -367,18 +370,11 @@ Ask one more clarifying question about your unique features, then move to verifi
         self.messages.append({"role": "user", "content": user_message})
         self.messages.append({"role": "assistant", "content": ai_message})
 
-        # Detect if LLM asked for a photo even before secret_verified flag is set
-        photo_keywords = ["photo", "picture", "upload", "image", "show me", "visual proof"]
-        ai_lower = ai_message.lower()
-        if any(kw in ai_lower for kw in photo_keywords) and self.trust_score >= 40:
-            self.verification_requested = True
-            self.secret_verified = True
-
         # Determine status
         if self.is_locked:
             status = "locked"
             can_continue = False
-        elif self.secret_verified or self.verification_requested:
+        elif self.secret_verified:
             status = "verified"
             can_continue = True
             self.verification_requested = True

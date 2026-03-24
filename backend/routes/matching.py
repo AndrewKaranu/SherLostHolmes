@@ -683,6 +683,55 @@ async def get_user_match_history(user_id: str):
     return {"user_id": user_id, "matches": matches}
 
 
+@router.post("/{session_id}/forward-to-admin")
+async def forward_to_admin(session_id: str):
+    """
+    Forward the current session's match to admin for manual review.
+    Saves the match to DB with needs_review status and forwarded_to_admin flag.
+    """
+    match_manager = get_session_manager()
+    interr_manager = get_interrogation_manager()
+    match_state = match_manager.get_session(session_id)
+
+    matches_collection = get_matches_collection()
+    items_collection = get_items_collection()
+
+    # Check if already saved for this session
+    existing = matches_collection.find_one({"session_id": session_id})
+    if existing:
+        matches_collection.update_one(
+            {"session_id": session_id},
+            {"$set": {"forwarded_to_admin": True, "match_status": "needs_review", "updated_at": datetime.utcnow()}}
+        )
+        existing["_id"] = str(existing["_id"])
+        existing["forwarded_to_admin"] = True
+        return {"status": "forwarded", "match": existing}
+
+    # Build doc from in-memory session state
+    item_id = match_state.selected_suspect_id if match_state else None
+    match_doc = {
+        "session_id": session_id,
+        "user_id": match_state.user_id if match_state else None,
+        "item_id": item_id,
+        "intake_data": match_state.intake_data if match_state else {},
+        "trust_score": match_state.trust_score if match_state else 0,
+        "match_score": match_state.match_score if match_state else 0,
+        "match_status": "needs_review",
+        "forwarded_to_admin": True,
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow(),
+    }
+    matches_collection.insert_one(match_doc)
+
+    if item_id:
+        items_collection.update_one(
+            {"_id": ObjectId(item_id)},
+            {"$set": {"status": "matched", "updated_at": datetime.utcnow()}}
+        )
+
+    return {"status": "forwarded"}
+
+
 @router.get("/pending-review")
 async def get_pending_reviews():
     """

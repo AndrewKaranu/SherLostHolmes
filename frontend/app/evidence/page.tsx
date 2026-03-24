@@ -440,7 +440,6 @@ export default function EvidenceBoard() {
       case 'lineup':
         return renderLineup();
       case 'interrogation':
-      case 'verification':
         return renderInterrogation();
       case 'complete':
         return renderComplete();
@@ -911,6 +910,21 @@ export default function EvidenceBoard() {
         
         {/* Actions */}
         <div className="flex flex-col gap-3">
+          <button
+            onClick={async () => {
+              if (!sessionId) return;
+              try {
+                await fetch(`${API_BASE_URL}/api/matching/${sessionId}/forward-to-admin`, { method: 'POST' });
+                alert('Case forwarded to admin for review.');
+              } catch {
+                alert('Failed to forward case. Please try again.');
+              }
+            }}
+            className="bg-concordia-burgundy hover:brightness-110 text-white font-display py-3 px-6 border-b-4 border-black/30 w-full flex items-center justify-center gap-2"
+          >
+            <span className="material-symbols-outlined text-base">forward_to_inbox</span>
+            FORWARD TO ADMIN
+          </button>
           <button
             onClick={() => window.location.href = '/dashboard'}
             className="bg-primary hover:bg-primary-dark text-white font-display py-3 px-6 border-b-4 border-[#561521] w-full"
