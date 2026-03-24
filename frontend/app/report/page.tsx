@@ -133,7 +133,7 @@ export default function FileReport() {
         contact_email: user?.primaryEmailAddress?.emailAddress || null,
       };
 
-      const response = await fetch(`${API_BASE_URL}/api/items/`, {
+      const response = await fetch(`${API_BASE_URL}/api/items`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
