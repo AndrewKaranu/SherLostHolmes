@@ -93,7 +93,7 @@ export default function Home() {
       )}
       
       {/* Dev status overlay */}
-      <div style={{ 
+      <div className="hidden md:block" style={{ 
         position: 'fixed', 
         bottom: '10px', 
         right: '10px', 

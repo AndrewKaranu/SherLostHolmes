@@ -23,13 +23,13 @@ export default function GameLayout({ children }: GameLayoutProps) {
   };
 
   return (
-    <main className="font-display min-h-screen flex flex-col pixel-cursor overflow-hidden relative">
+    <main className="font-display min-h-screen flex flex-col pixel-cursor overflow-x-hidden relative">
       {/* Background - Day mode only */}
       <div className="absolute inset-0 bg-concordia-day -z-20"></div>
       <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none -z-10 mix-blend-overlay"></div>
       
       {/* Background Image - Split and separated */}
-      <div className="absolute inset-x-0 bottom-0 h-3/4 pointer-events-none -z-10 flex justify-center items-end">
+      <div className="absolute inset-x-0 bottom-0 h-[48vh] sm:h-3/4 pointer-events-none -z-10 flex justify-center items-end">
         <div className="relative h-full w-full flex justify-center items-end">
           {/* Left Building */}
           <img 
@@ -38,11 +38,11 @@ export default function GameLayout({ children }: GameLayoutProps) {
             className="h-full w-auto object-contain absolute bottom-0 left-1/2"
             style={{ 
               clipPath: 'polygon(0 0, 50% 0, 50% 100%, 0 100%)',
-              transform: 'translateX(-50%) translateX(-200px)' 
+              transform: 'translateX(calc(-50% - clamp(60px, 12vw, 200px)))' 
             }}
           />
           {/* Right Building */}
-          <div className="absolute bottom-0 left-1/2 h-full w-auto" style={{ transform: 'translateX(-50%) translateX(200px)' }}>
+          <div className="absolute bottom-0 left-1/2 h-full w-auto" style={{ transform: 'translateX(calc(-50% + clamp(60px, 12vw, 200px)))' }}>
             <img 
               src="/concordia_bg.png" 
               alt="Concordia Right" 
@@ -70,9 +70,9 @@ export default function GameLayout({ children }: GameLayoutProps) {
       </div>
 
       {/* Header */}
-      <header className="pt-6 md:pt-16 pb-4 text-center relative z-10 px-4">
+      <header className="pt-5 md:pt-16 pb-4 text-center relative z-10 px-3 sm:px-4">
         <div className="inline-block relative group cursor-pointer">
-          <h1 className="text-3xl md:text-5xl lg:text-6xl text-primary tracking-widest uppercase drop-shadow-[4px_4px_0_rgba(0,0,0,0.8)] font-display">
+          <h1 className="text-[2rem] sm:text-4xl md:text-5xl lg:text-6xl text-primary tracking-widest uppercase drop-shadow-[4px_4px_0_rgba(0,0,0,0.8)] font-display">
             Sher<span className="text-black">LOST</span>Holmes
           </h1>
           <div className="hidden sm:block absolute -right-12 -top-6 text-4xl transform rotate-12 opacity-80 group-hover:scale-110 transition-transform">
@@ -98,9 +98,9 @@ export default function GameLayout({ children }: GameLayoutProps) {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-grow flex flex-col items-center justify-start pt-4 relative z-10 w-full max-w-md mx-auto">
+      <main className="flex-grow flex flex-col items-center justify-start pt-3 sm:pt-4 relative z-10 w-full max-w-xs sm:max-w-md md:max-w-lg mx-auto">
         {/* Top Chains */}
-        <div className="w-full flex justify-between px-16 -mb-4 relative z-20">
+        <div className="w-full flex justify-between px-8 sm:px-16 -mb-4 relative z-20">
           <div className="flex flex-col items-center">
             <div className="w-4 h-4 bg-gray-800 border-2 border-gray-600 rounded-full shadow-lg"></div>
             <div className="w-2 h-16 bg-chain border-x-2 border-black/30"></div>
@@ -118,7 +118,7 @@ export default function GameLayout({ children }: GameLayoutProps) {
 
       {/* Footer */}
       <footer className="w-full border-t-4 border-primary-dark bg-stone-800 text-white p-2 relative z-20">
-        <div className="container mx-auto flex flex-col md:flex-row justify-between items-center text-sm md:text-base font-bold tracking-wide gap-1 md:gap-0">
+        <div className="container mx-auto px-1 sm:px-0 flex flex-col md:flex-row justify-between items-center text-xs sm:text-sm md:text-base font-bold tracking-wide gap-1 md:gap-0">
           <div className="flex items-center space-x-3 md:space-x-4 mb-1 md:mb-0">
             <div className="flex items-center text-primary">
               <span className="material-symbols-outlined mr-1 text-base">person</span>
@@ -129,7 +129,7 @@ export default function GameLayout({ children }: GameLayoutProps) {
                 Montreal, 1888
             </div>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3 sm:space-x-4">
             {isSignedIn ? (
               <>
                 <div className="flex items-center text-accent-gold">
@@ -154,7 +154,7 @@ export default function GameLayout({ children }: GameLayoutProps) {
         </div>
         
         {/* News Ticker */}
-        <div className="w-full bg-black text-primary text-base overflow-hidden whitespace-nowrap border-t-2 border-gray-700 mt-2">
+        <div className="w-full bg-black text-primary text-sm sm:text-base overflow-hidden whitespace-nowrap border-t-2 border-gray-700 mt-2">
           <div className="inline-block animate-[marquee_20s_linear_infinite] px-4">
             +++ BREAKING NEWS: THE CHANCELLOR&apos;S GAVEL IS MISSING +++ STINGERS MASCOT SPOTTED IN LIBRARY +++ EXAM SEASON FOG RISING +++ DETECTIVE NEEDED AT 1455 DE MAISONNEUVE W +++ 
           </div>

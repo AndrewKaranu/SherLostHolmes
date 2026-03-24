@@ -103,9 +103,9 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="max-w-[1200px] mx-auto">
+    <div className="max-w-[1200px] mx-auto w-full">
       {/* Header */}
-      <div className="flex flex-wrap items-end justify-between gap-4 mb-6 md:mb-8">
+      <div className="flex flex-wrap items-end justify-between gap-3 md:gap-4 mb-6 md:mb-8">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3">
             <span className="material-symbols-outlined text-concordia-gold text-3xl md:text-4xl drop-shadow-md">dashboard</span>
@@ -119,7 +119,7 @@ export default function AdminDashboard() {
         </div>
         <button
           onClick={fetchDashboardData}
-          className="px-4 py-3 bg-parchment/10 text-parchment font-bold uppercase tracking-widest rounded-sm border-2 border-parchment/20 shadow-pixel-sm flex items-center gap-2 hover:bg-parchment/20 transition-all"
+          className="w-full sm:w-auto px-4 py-3 bg-parchment/10 text-parchment font-bold uppercase tracking-wide md:tracking-widest rounded-sm border-2 border-parchment/20 shadow-pixel-sm flex items-center justify-center gap-2 hover:bg-parchment/20 transition-all"
         >
           <span className="material-symbols-outlined">refresh</span>
           Refresh
@@ -134,10 +134,10 @@ export default function AdminDashboard() {
       ) : (
         <>
           {/* Stats Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
             {/* Pending Reviews */}
             <Link href="/admin/cases">
-              <div className="bg-concordia-burgundy p-6 border-4 border-black/20 shadow-pixel hover:brightness-110 transition-all cursor-pointer group">
+              <div className="bg-concordia-burgundy p-4 sm:p-6 border-4 border-black/20 shadow-pixel hover:brightness-110 transition-all cursor-pointer group">
                 <div className="flex items-start justify-between mb-4">
                   <span className="material-symbols-outlined text-parchment/60 text-3xl group-hover:scale-110 transition-transform">pending_actions</span>
                   {stats?.multiple_claims && stats.multiple_claims > 0 && (
@@ -153,7 +153,7 @@ export default function AdminDashboard() {
 
             {/* Total Items */}
             <Link href="/admin/inventory">
-              <div className="bg-wood-dark p-6 border-4 border-black/20 shadow-pixel hover:brightness-110 transition-all cursor-pointer group">
+              <div className="bg-wood-dark p-4 sm:p-6 border-4 border-black/20 shadow-pixel hover:brightness-110 transition-all cursor-pointer group">
                 <div className="flex items-start justify-between mb-4">
                   <span className="material-symbols-outlined text-parchment/60 text-3xl group-hover:scale-110 transition-transform">inventory_2</span>
                 </div>
@@ -163,7 +163,7 @@ export default function AdminDashboard() {
             </Link>
 
             {/* Unclaimed Items */}
-            <div className="bg-parchment p-6 border-4 border-wood-dark shadow-pixel">
+            <div className="bg-parchment p-4 sm:p-6 border-4 border-wood-dark shadow-pixel">
               <div className="flex items-start justify-between mb-4">
                 <span className="material-symbols-outlined text-wood-dark/60 text-3xl">search</span>
               </div>
@@ -173,7 +173,7 @@ export default function AdminDashboard() {
 
             {/* Locker Status */}
             <Link href="/admin/lockers">
-              <div className="bg-concordia-gold p-6 border-4 border-black/20 shadow-pixel hover:brightness-110 transition-all cursor-pointer group">
+              <div className="bg-concordia-gold p-4 sm:p-6 border-4 border-black/20 shadow-pixel hover:brightness-110 transition-all cursor-pointer group">
                 <div className="flex items-start justify-between mb-4">
                   <span className="material-symbols-outlined text-burgundy-dark/60 text-3xl group-hover:scale-110 transition-transform">lock_open</span>
                   {stats?.locker_stats.assigned && stats.locker_stats.assigned > 0 && (
@@ -191,36 +191,36 @@ export default function AdminDashboard() {
           {/* Quick Actions & Recent Activity */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Quick Actions */}
-            <div className="bg-parchment p-6 border-4 border-wood-dark shadow-pixel">
+            <div className="bg-parchment p-4 sm:p-6 border-4 border-wood-dark shadow-pixel">
               <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-wood-dark/20">
                 <span className="material-symbols-outlined text-concordia-burgundy text-2xl">bolt</span>
                 <h2 className="text-wood-dark text-xl font-bold font-display uppercase tracking-wide">Quick Actions</h2>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <Link href="/admin/cases">
-                  <button className="w-full py-4 px-4 bg-concordia-burgundy text-parchment font-bold uppercase tracking-widest border-2 border-black/20 shadow-[3px_3px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none hover:brightness-110 transition-all flex items-center justify-center gap-2">
+                  <button className="w-full py-4 px-4 bg-concordia-burgundy text-parchment text-sm sm:text-base font-bold uppercase tracking-wide md:tracking-widest border-2 border-black/20 shadow-[3px_3px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none hover:brightness-110 transition-all flex items-center justify-center gap-2">
                     <span className="material-symbols-outlined">gavel</span>
                     Review Cases
                   </button>
                 </Link>
 
                 <Link href="/admin/inventory">
-                  <button className="w-full py-4 px-4 bg-wood-dark text-parchment font-bold uppercase tracking-widest border-2 border-black/20 shadow-[3px_3px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none hover:brightness-110 transition-all flex items-center justify-center gap-2">
+                  <button className="w-full py-4 px-4 bg-wood-dark text-parchment text-sm sm:text-base font-bold uppercase tracking-wide md:tracking-widest border-2 border-black/20 shadow-[3px_3px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none hover:brightness-110 transition-all flex items-center justify-center gap-2">
                     <span className="material-symbols-outlined">folder_managed</span>
                     Evidence Ledger
                   </button>
                 </Link>
 
                 <Link href="/admin/lockers">
-                  <button className="w-full py-4 px-4 bg-concordia-gold text-burgundy-dark font-bold uppercase tracking-widest border-2 border-black/20 shadow-[3px_3px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none hover:brightness-110 transition-all flex items-center justify-center gap-2">
+                  <button className="w-full py-4 px-4 bg-concordia-gold text-burgundy-dark text-sm sm:text-base font-bold uppercase tracking-wide md:tracking-widest border-2 border-black/20 shadow-[3px_3px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none hover:brightness-110 transition-all flex items-center justify-center gap-2">
                     <span className="material-symbols-outlined">lock</span>
                     Locker Control
                   </button>
                 </Link>
 
                 <Link href="/report">
-                  <button className="w-full py-4 px-4 bg-parchment text-wood-dark font-bold uppercase tracking-widest border-2 border-wood-dark/30 shadow-[3px_3px_0_rgba(0,0,0,0.2)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none hover:bg-wood-dark/10 transition-all flex items-center justify-center gap-2">
+                  <button className="w-full py-4 px-4 bg-parchment text-wood-dark text-sm sm:text-base font-bold uppercase tracking-wide md:tracking-widest border-2 border-wood-dark/30 shadow-[3px_3px_0_rgba(0,0,0,0.2)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none hover:bg-wood-dark/10 transition-all flex items-center justify-center gap-2">
                     <span className="material-symbols-outlined">add_box</span>
                     Register Item
                   </button>
@@ -229,7 +229,7 @@ export default function AdminDashboard() {
             </div>
 
             {/* Recent Pending Cases */}
-            <div className="bg-parchment p-6 border-4 border-wood-dark shadow-pixel">
+            <div className="bg-parchment p-4 sm:p-6 border-4 border-wood-dark shadow-pixel">
               <div className="flex items-center justify-between mb-6 pb-4 border-b-2 border-wood-dark/20">
                 <div className="flex items-center gap-3">
                   <span className="material-symbols-outlined text-concordia-burgundy text-2xl">pending_actions</span>
@@ -249,15 +249,15 @@ export default function AdminDashboard() {
                 <div className="space-y-3">
                   {recentMatches.map((match) => (
                     <Link key={match._id} href="/admin/cases">
-                      <div className="flex items-center justify-between p-3 bg-wood-dark/5 hover:bg-wood-dark/10 transition-colors rounded-sm cursor-pointer">
-                        <div className="flex items-center gap-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 bg-wood-dark/5 hover:bg-wood-dark/10 transition-colors rounded-sm cursor-pointer">
+                        <div className="flex items-center gap-3 min-w-0">
                           <div className={`w-2 h-2 rounded-full ${match.has_multiple_claims ? 'bg-concordia-gold animate-pulse' : 'bg-concordia-burgundy'}`}></div>
-                          <div>
-                            <p className="text-wood-dark font-bold text-sm uppercase">{match.item?.name || 'Unknown Item'}</p>
+                          <div className="min-w-0">
+                            <p className="text-wood-dark font-bold text-sm uppercase truncate">{match.item?.name || 'Unknown Item'}</p>
                             <p className="text-wood-dark/60 text-xs">{formatDate(match.created_at)}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 sm:justify-end">
                           {match.has_multiple_claims && (
                             <span className="text-concordia-gold text-xs font-bold">CONFLICT</span>
                           )}
@@ -272,7 +272,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Status Breakdown */}
-          <div className="mt-8 bg-parchment p-6 border-4 border-wood-dark shadow-pixel">
+          <div className="mt-8 bg-parchment p-4 sm:p-6 border-4 border-wood-dark shadow-pixel">
             <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-wood-dark/20">
               <span className="material-symbols-outlined text-concordia-burgundy text-2xl">analytics</span>
               <h2 className="text-wood-dark text-xl font-bold font-display uppercase tracking-wide">System Status</h2>
