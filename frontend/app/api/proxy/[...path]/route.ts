@@ -77,12 +77,14 @@ async function proxy(req: NextRequest, { params }: { params: Promise<{ path: str
   try {
     response = await fetchWithRetry(targetUrl, fetchOptions);
   } catch (err) {
+    const cause = (err as any)?.cause;
+    const causeMsg = cause instanceof Error ? cause.message : cause ? String(cause) : undefined;
     const message = err instanceof Error ? err.message : String(err);
     return new NextResponse(JSON.stringify({
       error: 'Proxy fetch failed',
       detail: message,
+      cause: causeMsg,
       target: targetUrl,
-      hint: 'Verify BACKEND_URL is reachable from Vercel and not an expired tunnel URL.'
     }), {
       status: 502,
       headers: { 'content-type': 'application/json' },
