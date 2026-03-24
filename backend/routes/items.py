@@ -107,8 +107,77 @@ class ItemUpdate(BaseModel):
 
 # ============== Endpoints ==============
 
+def _run_ai_and_embeddings(item_id: str, item: ItemCreate):
+    """Background task: generate AI data and embeddings after item is saved."""
+    items = get_items_collection()
+
+    # Generate AI data
+    ai_data = None
+    try:
+        ai_result = generate_item_ai_data(
+            item_name=item.item_name,
+            description=item.description,
+            category=item.category,
+            location_name=item.location_name,
+            location_description=item.location_description,
+            notes=item.notes,
+            image_urls=item.image_urls
+        )
+        ai_data = {
+            "vector_context": ai_result.get("vector_context"),
+            "blind_lineup_display": ai_result.get("blind_lineup_display"),
+            "persona_engine": ai_result.get("persona_engine"),
+            "ai_generated": True,
+            "ai_error": None
+        }
+    except Exception as ai_error:
+        ai_data = {
+            "vector_context": None,
+            "blind_lineup_display": None,
+            "persona_engine": None,
+            "ai_generated": False,
+            "ai_error": str(ai_error)
+        }
+    items.update_one(
+        {"_id": ObjectId(item_id)},
+        {"$set": {"ai_data": ai_data, "updated_at": datetime.utcnow()}}
+    )
+
+    # Generate embeddings
+    rich_description = None
+    if ai_data and ai_data.get("vector_context"):
+        rich_description = ai_data["vector_context"].get("rich_description")
+    try:
+        embeddings_result = generate_item_embeddings(
+            rich_description=rich_description,
+            image_urls=item.image_urls,
+            use_multimodal=True
+        )
+        embeddings_data = {
+            "text_embedding": embeddings_result.get("text_embedding"),
+            "multimodal_embedding": embeddings_result.get("multimodal_embedding"),
+            "unified_description": embeddings_result.get("unified_description"),
+            "text_embedding_model": embeddings_result.get("text_embedding_model"),
+            "multimodal_embedding_model": embeddings_result.get("multimodal_embedding_model"),
+            "embedding_error": embeddings_result.get("embedding_error")
+        }
+    except Exception as emb_error:
+        embeddings_data = {
+            "text_embedding": None,
+            "multimodal_embedding": None,
+            "unified_description": None,
+            "text_embedding_model": None,
+            "multimodal_embedding_model": None,
+            "embedding_error": str(emb_error)
+        }
+    items.update_one(
+        {"_id": ObjectId(item_id)},
+        {"$set": {"embeddings": embeddings_data, "updated_at": datetime.utcnow()}}
+    )
+
+
 @router.post("/", response_model=ItemResponse)
-async def create_item(item: ItemCreate):
+async def create_item(item: ItemCreate, background_tasks: BackgroundTasks):
     """
     Create a new lost item report
 
@@ -118,7 +187,7 @@ async def create_item(item: ItemCreate):
     - Image URLs (already uploaded to Cloudinary)
     - User information
 
-    After creation, an LLM generates AI data for matching and persona.
+    AI data and embeddings are generated in the background after the response is returned.
     """
     try:
         items = get_items_collection()
@@ -141,112 +210,29 @@ async def create_item(item: ItemCreate):
             "contact_email": item.contact_email,
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow(),
-            "ai_data": None
+            "ai_data": None,
+            "embeddings": None,
         }
 
         # Insert into MongoDB
         result = items.insert_one(item_doc)
         item_id = str(result.inserted_id)
 
-        # Generate AI data using LLM
-        ai_data = None
-        try:
-            ai_result = generate_item_ai_data(
-                item_name=item.item_name,
-                description=item.description,
-                category=item.category,
-                location_name=item.location_name,
-                location_description=item.location_description,
-                notes=item.notes,
-                image_urls=item.image_urls
-            )
-
-            ai_data = {
-                "vector_context": ai_result.get("vector_context"),
-                "blind_lineup_display": ai_result.get("blind_lineup_display"),
-                "persona_engine": ai_result.get("persona_engine"),
-                "ai_generated": True,
-                "ai_error": None
-            }
-
-            # Update the document with AI data
-            items.update_one(
-                {"_id": ObjectId(item_id)},
-                {"$set": {"ai_data": ai_data, "updated_at": datetime.utcnow()}}
-            )
-        except Exception as ai_error:
-            # Store the error but don't fail the request
-            ai_data = {
-                "vector_context": None,
-                "blind_lineup_display": None,
-                "persona_engine": None,
-                "ai_generated": False,
-                "ai_error": str(ai_error)
-            }
-            items.update_one(
-                {"_id": ObjectId(item_id)},
-                {"$set": {"ai_data": ai_data, "updated_at": datetime.utcnow()}}
-            )
-
-        # Generate embeddings for vector search
-        embeddings_data = None
-        try:
-            # Get the rich description from AI data if available
-            rich_description = None
-            if ai_data and ai_data.get("vector_context"):
-                rich_description = ai_data["vector_context"].get("rich_description")
-
-            # Generate embeddings using text and images
-            embeddings_result = generate_item_embeddings(
-                rich_description=rich_description,
-                image_urls=item.image_urls,
-                use_multimodal=True
-            )
-
-            embeddings_data = {
-                "text_embedding": embeddings_result.get("text_embedding"),
-                "multimodal_embedding": embeddings_result.get("multimodal_embedding"),
-                "unified_description": embeddings_result.get("unified_description"),
-                "text_embedding_model": embeddings_result.get("text_embedding_model"),
-                "multimodal_embedding_model": embeddings_result.get("multimodal_embedding_model"),
-                "embedding_error": embeddings_result.get("embedding_error")
-            }
-
-            # Update the document with embeddings
-            items.update_one(
-                {"_id": ObjectId(item_id)},
-                {"$set": {"embeddings": embeddings_data, "updated_at": datetime.utcnow()}}
-            )
-        except Exception as emb_error:
-            # Store the error but don't fail the request
-            embeddings_data = {
-                "text_embedding": None,
-                "multimodal_embedding": None,
-                "unified_description": None,
-                "text_embedding_model": None,
-                "multimodal_embedding_model": None,
-                "embedding_error": str(emb_error)
-            }
-            items.update_one(
-                {"_id": ObjectId(item_id)},
-                {"$set": {"embeddings": embeddings_data, "updated_at": datetime.utcnow()}}
-            )
-
         # Award 5 spins to the user for submitting a found item
-        spins_awarded = 0
         if item.user_id:
             try:
                 users = get_users_collection()
-                result = users.update_one(
+                users.update_one(
                     {"clerk_id": item.user_id},
                     {"$inc": {"spins": 5}}
                 )
-                if result.matched_count > 0:
-                    spins_awarded = 5
             except Exception:
                 pass  # Don't fail item creation if spin award fails
 
-        # Return the created item
+        # Schedule AI generation + embeddings to run after response is sent
+        background_tasks.add_task(_run_ai_and_embeddings, item_id, item)
+
+        # Return the created item immediately
         return ItemResponse(
             id=item_id,
             item_name=item.item_name,
@@ -263,8 +249,8 @@ async def create_item(item: ItemCreate):
             user_id=item.user_id,
             contact_email=item.contact_email,
             created_at=item_doc["created_at"],
-            ai_data=ItemAIData(**ai_data) if ai_data else None,
-            embeddings=ItemEmbeddings(**embeddings_data) if embeddings_data else None
+            ai_data=None,
+            embeddings=None
         )
 
     except Exception as e:
