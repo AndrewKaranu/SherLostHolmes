@@ -26,7 +26,17 @@ async function proxy(req: NextRequest, { params }: { params: Promise<{ path: str
     fetchOptions.body = await req.arrayBuffer();
   }
 
-  const response = await fetch(targetUrl, fetchOptions);
+  let response: Response;
+  try {
+    response = await fetch(targetUrl, fetchOptions);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return new NextResponse(JSON.stringify({ error: 'Proxy fetch failed', detail: message, target: targetUrl }), {
+      status: 502,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
   const responseBody = await response.arrayBuffer();
 
   const responseHeaders = new Headers();
