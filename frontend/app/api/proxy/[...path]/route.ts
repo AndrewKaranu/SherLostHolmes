@@ -10,7 +10,7 @@ async function proxy(req: NextRequest, { params }: { params: Promise<{ path: str
 
   const headers = new Headers();
   req.headers.forEach((value, key) => {
-    if (!['host', 'connection'].includes(key.toLowerCase())) {
+    if (!['host', 'connection', 'content-length'].includes(key.toLowerCase())) {
       headers.set(key, value);
     }
   });
@@ -23,20 +23,20 @@ async function proxy(req: NextRequest, { params }: { params: Promise<{ path: str
   };
 
   if (req.method !== 'GET' && req.method !== 'HEAD') {
-    fetchOptions.body = req.body;
-    (fetchOptions as RequestInit & { duplex: string }).duplex = 'half';
+    fetchOptions.body = await req.arrayBuffer();
   }
 
   const response = await fetch(targetUrl, fetchOptions);
+  const responseBody = await response.arrayBuffer();
 
   const responseHeaders = new Headers();
   response.headers.forEach((value, key) => {
-    if (!['content-encoding', 'transfer-encoding'].includes(key.toLowerCase())) {
+    if (!['content-encoding', 'transfer-encoding', 'content-length'].includes(key.toLowerCase())) {
       responseHeaders.set(key, value);
     }
   });
 
-  return new NextResponse(response.body, {
+  return new NextResponse(responseBody, {
     status: response.status,
     statusText: response.statusText,
     headers: responseHeaders,
