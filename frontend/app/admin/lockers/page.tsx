@@ -173,8 +173,8 @@ export default function LockersPage() {
       <div className="flex flex-wrap items-end justify-between gap-6 mb-8">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-concordia-gold text-4xl drop-shadow-md">lock</span>
-            <h1 className="text-parchment text-4xl md:text-5xl font-black leading-tight tracking-tight uppercase drop-shadow-[4px_4px_0_rgba(0,0,0,0.5)] font-display">
+            <span className="material-symbols-outlined text-concordia-gold text-3xl md:text-4xl drop-shadow-md">lock</span>
+            <h1 className="text-parchment text-2xl md:text-4xl lg:text-5xl font-black leading-tight tracking-tight uppercase drop-shadow-[4px_4px_0_rgba(0,0,0,0.5)] font-display">
               Locker Control
             </h1>
           </div>
@@ -205,25 +205,25 @@ export default function LockersPage() {
 
       {/* Stats Cards */}
       {trackingData && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-3 md:grid-cols-5 gap-2 md:gap-4 mb-6 md:mb-8">
           <div className="bg-parchment p-4 border-4 border-wood-dark shadow-pixel text-center">
-            <p className="text-wood-dark text-3xl font-black font-display">{trackingData.stats.total}</p>
+            <p className="text-wood-dark text-xl md:text-3xl font-black font-display">{trackingData.stats.total}</p>
             <p className="text-wood-dark/60 text-xs font-bold uppercase mt-1">Total</p>
           </div>
           <div className="bg-green-100 p-4 border-4 border-green-300 shadow-pixel text-center">
-            <p className="text-green-800 text-3xl font-black font-display">{trackingData.stats.available}</p>
+            <p className="text-green-800 text-xl md:text-3xl font-black font-display">{trackingData.stats.available}</p>
             <p className="text-green-700/60 text-xs font-bold uppercase mt-1">Available</p>
           </div>
           <div className="bg-concordia-gold/30 p-4 border-4 border-concordia-gold shadow-pixel text-center">
-            <p className="text-burgundy-dark text-3xl font-black font-display">{trackingData.stats.assigned}</p>
+            <p className="text-burgundy-dark text-xl md:text-3xl font-black font-display">{trackingData.stats.assigned}</p>
             <p className="text-burgundy-dark/60 text-xs font-bold uppercase mt-1">Assigned</p>
           </div>
           <div className="bg-blue-100 p-4 border-4 border-blue-300 shadow-pixel text-center">
-            <p className="text-blue-800 text-3xl font-black font-display">{trackingData.stats.unlocked}</p>
+            <p className="text-blue-800 text-xl md:text-3xl font-black font-display">{trackingData.stats.unlocked}</p>
             <p className="text-blue-700/60 text-xs font-bold uppercase mt-1">Unlocked</p>
           </div>
           <div className="bg-gray-100 p-4 border-4 border-gray-300 shadow-pixel text-center">
-            <p className="text-gray-700 text-3xl font-black font-display">{trackingData.stats.collected}</p>
+            <p className="text-gray-700 text-xl md:text-3xl font-black font-display">{trackingData.stats.collected}</p>
             <p className="text-gray-600/60 text-xs font-bold uppercase mt-1">Collected</p>
           </div>
         </div>
@@ -251,7 +251,7 @@ export default function LockersPage() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 md:gap-4">
             {filteredLockers.map((locker) => {
               const config = getStatusConfig(locker.status);
               return (

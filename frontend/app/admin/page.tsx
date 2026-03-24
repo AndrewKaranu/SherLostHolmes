@@ -105,15 +105,15 @@ export default function AdminDashboard() {
   return (
     <div className="max-w-[1200px] mx-auto">
       {/* Header */}
-      <div className="flex flex-wrap items-end justify-between gap-6 mb-8">
+      <div className="flex flex-wrap items-end justify-between gap-4 mb-6 md:mb-8">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-concordia-gold text-4xl drop-shadow-md">dashboard</span>
-            <h1 className="text-parchment text-4xl md:text-5xl font-black leading-tight tracking-tight uppercase drop-shadow-[4px_4px_0_rgba(0,0,0,0.5)] font-display">
+            <span className="material-symbols-outlined text-concordia-gold text-3xl md:text-4xl drop-shadow-md">dashboard</span>
+            <h1 className="text-parchment text-2xl md:text-4xl lg:text-5xl font-black leading-tight tracking-tight uppercase drop-shadow-[4px_4px_0_rgba(0,0,0,0.5)] font-display">
               Command Center
             </h1>
           </div>
-          <p className="text-parchment/80 text-lg max-w-xl font-handwriting">
+          <p className="text-parchment/80 text-sm md:text-lg max-w-xl font-handwriting">
             <span className="text-concordia-gold font-bold">Welcome, Custodian</span> • Concordia Bureau of Missing Items
           </p>
         </div>
@@ -134,7 +134,7 @@ export default function AdminDashboard() {
       ) : (
         <>
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
             {/* Pending Reviews */}
             <Link href="/admin/cases">
               <div className="bg-concordia-burgundy p-6 border-4 border-black/20 shadow-pixel hover:brightness-110 transition-all cursor-pointer group">
@@ -146,8 +146,8 @@ export default function AdminDashboard() {
                     </span>
                   )}
                 </div>
-                <p className="text-parchment text-5xl font-black font-display">{stats?.pending_matches || 0}</p>
-                <p className="text-parchment/60 text-sm font-bold uppercase tracking-wider mt-2">Pending Reviews</p>
+                <p className="text-parchment text-3xl md:text-5xl font-black font-display">{stats?.pending_matches || 0}</p>
+                <p className="text-parchment/60 text-xs md:text-sm font-bold uppercase tracking-wider mt-2">Pending Reviews</p>
               </div>
             </Link>
 
@@ -157,8 +157,8 @@ export default function AdminDashboard() {
                 <div className="flex items-start justify-between mb-4">
                   <span className="material-symbols-outlined text-parchment/60 text-3xl group-hover:scale-110 transition-transform">inventory_2</span>
                 </div>
-                <p className="text-parchment text-5xl font-black font-display">{stats?.total_items || 0}</p>
-                <p className="text-parchment/60 text-sm font-bold uppercase tracking-wider mt-2">Total Evidence</p>
+                <p className="text-parchment text-3xl md:text-5xl font-black font-display">{stats?.total_items || 0}</p>
+                <p className="text-parchment/60 text-xs md:text-sm font-bold uppercase tracking-wider mt-2">Total Evidence</p>
               </div>
             </Link>
 
@@ -167,8 +167,8 @@ export default function AdminDashboard() {
               <div className="flex items-start justify-between mb-4">
                 <span className="material-symbols-outlined text-wood-dark/60 text-3xl">search</span>
               </div>
-              <p className="text-wood-dark text-5xl font-black font-display">{stats?.items_by_status.unclaimed || 0}</p>
-              <p className="text-wood-dark/60 text-sm font-bold uppercase tracking-wider mt-2">Unclaimed Items</p>
+              <p className="text-wood-dark text-3xl md:text-5xl font-black font-display">{stats?.items_by_status.unclaimed || 0}</p>
+              <p className="text-wood-dark/60 text-xs md:text-sm font-bold uppercase tracking-wider mt-2">Unclaimed Items</p>
             </div>
 
             {/* Locker Status */}
@@ -182,8 +182,8 @@ export default function AdminDashboard() {
                     </span>
                   )}
                 </div>
-                <p className="text-burgundy-dark text-5xl font-black font-display">{stats?.locker_stats.available || 0}/{stats?.locker_stats.total || 10}</p>
-                <p className="text-burgundy-dark/60 text-sm font-bold uppercase tracking-wider mt-2">Lockers Available</p>
+                <p className="text-burgundy-dark text-2xl md:text-4xl lg:text-5xl font-black font-display">{stats?.locker_stats.available || 0}/{stats?.locker_stats.total || 10}</p>
+                <p className="text-burgundy-dark/60 text-xs md:text-sm font-bold uppercase tracking-wider mt-2">Lockers Available</p>
               </div>
             </Link>
           </div>
@@ -278,21 +278,21 @@ export default function AdminDashboard() {
               <h2 className="text-wood-dark text-xl font-bold font-display uppercase tracking-wide">System Status</h2>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               <div className="text-center p-4 bg-concordia-burgundy/10 rounded-sm">
-                <p className="text-concordia-burgundy text-3xl font-black font-display">{stats?.items_by_status.unclaimed || 0}</p>
+                <p className="text-concordia-burgundy text-2xl md:text-3xl font-black font-display">{stats?.items_by_status.unclaimed || 0}</p>
                 <p className="text-wood-dark/60 text-xs font-bold uppercase mt-1">Unclaimed</p>
               </div>
               <div className="text-center p-4 bg-blue-100 rounded-sm">
-                <p className="text-blue-800 text-3xl font-black font-display">{stats?.items_by_status.matched || 0}</p>
+                <p className="text-blue-800 text-2xl md:text-3xl font-black font-display">{stats?.items_by_status.matched || 0}</p>
                 <p className="text-wood-dark/60 text-xs font-bold uppercase mt-1">Matched</p>
               </div>
               <div className="text-center p-4 bg-green-100 rounded-sm">
-                <p className="text-green-800 text-3xl font-black font-display">{stats?.items_by_status.returned || 0}</p>
+                <p className="text-green-800 text-2xl md:text-3xl font-black font-display">{stats?.items_by_status.returned || 0}</p>
                 <p className="text-wood-dark/60 text-xs font-bold uppercase mt-1">Returned</p>
               </div>
               <div className="text-center p-4 bg-concordia-gold/20 rounded-sm">
-                <p className="text-burgundy-dark text-3xl font-black font-display">
+                <p className="text-burgundy-dark text-2xl md:text-3xl font-black font-display">
                   {(stats?.locker_stats.assigned || 0) + (stats?.locker_stats.unlocked || 0)}
                 </p>
                 <p className="text-wood-dark/60 text-xs font-bold uppercase mt-1">Awaiting Pickup</p>

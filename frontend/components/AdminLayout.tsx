@@ -27,45 +27,44 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       </div>
 
       <div className="relative z-10 layout-container flex h-full grow flex-col">
-        <header className="flex items-center justify-between whitespace-nowrap border-b-4 border-double border-parchment/20 px-10 py-4 backdrop-blur-md bg-black/40 shadow-pixel">
-          <div className="flex items-center gap-8">
-            <div className="flex items-center gap-4 text-parchment">
-              <div className="size-10 bg-concordia-burgundy flex items-center justify-center rounded-sm border-2 border-parchment/20 shadow-pixel-sm">
-                <span className="material-symbols-outlined text-parchment text-xl">inventory_2</span>
+        <header className="flex flex-wrap items-center justify-between gap-2 border-b-4 border-double border-parchment/20 px-4 md:px-8 py-3 md:py-4 backdrop-blur-md bg-black/40 shadow-pixel">
+          <div className="flex flex-wrap items-center gap-3 md:gap-6">
+            <div className="flex items-center gap-3 text-parchment">
+              <div className="size-8 md:size-10 bg-concordia-burgundy flex items-center justify-center rounded-sm border-2 border-parchment/20 shadow-pixel-sm">
+                <span className="material-symbols-outlined text-parchment text-lg md:text-xl">inventory_2</span>
               </div>
               <div>
-                <h2 className="text-parchment text-xl md:text-2xl font-bold leading-tight tracking-widest uppercase drop-shadow-md font-display">
+                <h2 className="text-parchment text-base md:text-xl font-bold leading-tight tracking-widest uppercase drop-shadow-md font-display">
                   SHER<span className="text-black">LOST</span>HOLMES
                 </h2>
-                <p className="text-[10px] text-concordia-gold font-bold uppercase tracking-[0.2em] font-sans">Evidence Custodian</p>
+                <p className="text-[9px] md:text-[10px] text-concordia-gold font-bold uppercase tracking-[0.2em] font-sans">Evidence Custodian</p>
               </div>
             </div>
-            <div className="flex items-center gap-8 ml-8">
-              <Link className={`text-sm font-bold tracking-wider uppercase ${isActive('/admin')}`} href="/admin">
+            <nav className="flex items-center gap-3 md:gap-6 md:ml-4">
+              <Link className={`text-xs md:text-sm font-bold tracking-wider uppercase ${isActive('/admin')}`} href="/admin">
                 Investigation
               </Link>
-              <Link className={`text-sm font-bold tracking-wider uppercase ${isActive('/admin/inventory')}`} href="/admin/inventory">
-                Evidence Ledger
+              <Link className={`text-xs md:text-sm font-bold tracking-wider uppercase ${isActive('/admin/inventory')}`} href="/admin/inventory">
+                <span className="hidden sm:inline">Evidence Ledger</span>
+                <span className="sm:hidden">Ledger</span>
               </Link>
-              <Link className="text-parchment/60 text-sm font-bold tracking-wider uppercase hover:text-parchment transition-colors" href="#">
+              <Link className={`text-xs md:text-sm font-bold tracking-wider uppercase ${isActive('/admin/lockers')}`} href="/admin/lockers">
                 Lockers
               </Link>
-            </div>
+            </nav>
           </div>
-          
-          <div className="flex flex-1 justify-end gap-6 items-center">
-            <div className="flex gap-3">
-              <button className="flex items-center justify-center rounded-sm h-10 w-10 bg-white/5 hover:bg-white/10 text-parchment transition-all border-2 border-parchment/10 shadow-pixel-sm hover:translate-y-px hover:shadow-none">
-                <span className="material-symbols-outlined">search</span>
-              </button>
-              <button className="flex items-center justify-center rounded-sm h-10 w-10 bg-white/5 hover:bg-white/10 text-parchment transition-all border-2 border-parchment/10 shadow-pixel-sm hover:translate-y-px hover:shadow-none">
-                <span className="material-symbols-outlined">person</span>
-              </button>
-            </div>
+
+          <div className="flex gap-2 md:gap-3">
+            <button className="flex items-center justify-center rounded-sm h-8 w-8 md:h-10 md:w-10 bg-white/5 hover:bg-white/10 text-parchment transition-all border-2 border-parchment/10 shadow-pixel-sm hover:translate-y-px hover:shadow-none">
+              <span className="material-symbols-outlined text-sm md:text-base">search</span>
+            </button>
+            <button className="flex items-center justify-center rounded-sm h-8 w-8 md:h-10 md:w-10 bg-white/5 hover:bg-white/10 text-parchment transition-all border-2 border-parchment/10 shadow-pixel-sm hover:translate-y-px hover:shadow-none">
+              <span className="material-symbols-outlined text-sm md:text-base">person</span>
+            </button>
           </div>
         </header>
-        
-        <main className="flex-1 px-10 py-12">
+
+        <main className="flex-1 px-4 md:px-8 lg:px-10 py-6 md:py-10 lg:py-12">
             {children}
         </main>
 

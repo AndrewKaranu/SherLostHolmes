@@ -70,21 +70,21 @@ export default function GameLayout({ children }: GameLayoutProps) {
       </div>
 
       {/* Header */}
-      <header className="pt-8 md:pt-16 pb-4 text-center relative z-10">
+      <header className="pt-6 md:pt-16 pb-4 text-center relative z-10 px-4">
         <div className="inline-block relative group cursor-pointer">
-          <h1 className="text-4xl md:text-6xl text-primary tracking-widest uppercase drop-shadow-[4px_4px_0_rgba(0,0,0,0.8)] font-display">
+          <h1 className="text-3xl md:text-5xl lg:text-6xl text-primary tracking-widest uppercase drop-shadow-[4px_4px_0_rgba(0,0,0,0.8)] font-display">
             Sher<span className="text-black">LOST</span>Holmes
           </h1>
-          <div className="absolute -right-12 -top-6 text-4xl transform rotate-12 opacity-80 group-hover:scale-110 transition-transform">
+          <div className="hidden sm:block absolute -right-12 -top-6 text-4xl transform rotate-12 opacity-80 group-hover:scale-110 transition-transform">
             🔍
           </div>
-          <p className="mt-2 text-lg md:text-xl text-stone-700 font-bold bg-background-light/90 inline-block px-4 py-1 border-2 border-primary pixel-cursor shadow-pixel-sm">
+          <p className="mt-2 text-sm md:text-lg text-stone-700 font-bold bg-background-light/90 inline-block px-3 md:px-4 py-1 border-2 border-primary pixel-cursor shadow-pixel-sm">
             EST. 1887 • CONCORDIA LOST & FOUND
           </p>
-          
-          {/* Sherlock Standing Next to "S" - Clickable when signed in for admin access */}
+
+          {/* Sherlock Standing Next to "S" - hidden on mobile to prevent overflow */}
           <div
-            className={`absolute right-full -mr-16 -top-8 w-64 z-50 ${isSignedIn ? 'cursor-pointer hover:scale-105 transition-transform' : 'pointer-events-none'}`}
+            className={`hidden md:block absolute right-full -mr-16 -top-8 w-48 lg:w-64 z-50 ${isSignedIn ? 'cursor-pointer hover:scale-105 transition-transform' : 'pointer-events-none'}`}
             onClick={handleSherlockClick}
             title={isSignedIn ? 'Access Admin Panel' : undefined}
           >
@@ -118,8 +118,8 @@ export default function GameLayout({ children }: GameLayoutProps) {
 
       {/* Footer */}
       <footer className="w-full border-t-4 border-primary-dark bg-stone-800 text-white p-2 relative z-20">
-        <div className="container mx-auto flex flex-col md:flex-row justify-between items-center text-lg md:text-xl font-bold tracking-wide">
-          <div className="flex items-center space-x-4 mb-2 md:mb-0">
+        <div className="container mx-auto flex flex-col md:flex-row justify-between items-center text-sm md:text-base font-bold tracking-wide gap-1 md:gap-0">
+          <div className="flex items-center space-x-3 md:space-x-4 mb-1 md:mb-0">
             <div className="flex items-center text-primary">
               <span className="material-symbols-outlined mr-1 text-base">person</span>
               <span>{isSignedIn && studentId ? studentId : '[Student_ID]'}</span>

@@ -452,12 +452,12 @@ export default function CasesPage() {
       <div className="flex flex-wrap items-end justify-between gap-6 mb-8">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-concordia-gold text-4xl drop-shadow-md">gavel</span>
-            <h1 className="text-parchment text-4xl md:text-5xl font-black leading-tight tracking-tight uppercase drop-shadow-[4px_4px_0_rgba(0,0,0,0.5)] font-display">
+            <span className="material-symbols-outlined text-concordia-gold text-3xl md:text-4xl drop-shadow-md">gavel</span>
+            <h1 className="text-parchment text-2xl md:text-4xl lg:text-5xl font-black leading-tight tracking-tight uppercase drop-shadow-[4px_4px_0_rgba(0,0,0,0.5)] font-display">
               Case Review
             </h1>
           </div>
-          <p className="text-parchment/80 text-lg max-w-xl font-handwriting">
+          <p className="text-parchment/80 text-sm md:text-lg max-w-xl font-handwriting">
             <span className="text-concordia-gold font-bold">{matches.length} pending</span> cases awaiting your verdict
           </p>
         </div>
@@ -503,8 +503,8 @@ export default function CasesPage() {
             <p className="text-wood-dark/40 text-sm">All cases have been reviewed</p>
           </div>
         ) : (
-          <div className="overflow-y-auto max-h-[600px]">
-            <table className="w-full border-collapse">
+          <div className="overflow-auto max-h-[600px]">
+            <table className="w-full border-collapse min-w-[600px]">
               <thead className="sticky top-0 z-10">
                 <tr className="bg-wood-dark text-parchment">
                   <th className="px-4 py-4 text-left text-[10px] font-black uppercase tracking-widest">Evidence</th>

@@ -334,8 +334,8 @@ export default function EvidenceInventoryLedger() {
       <div className="flex flex-wrap items-end justify-between gap-6 mb-8">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-concordia-gold text-4xl drop-shadow-md">folder_managed</span>
-            <h1 className="text-parchment text-4xl md:text-5xl font-black leading-tight tracking-tight uppercase drop-shadow-[4px_4px_0_rgba(0,0,0,0.5)] font-display">Inventory Ledger</h1>
+            <span className="material-symbols-outlined text-concordia-gold text-3xl md:text-4xl drop-shadow-md">folder_managed</span>
+            <h1 className="text-parchment text-2xl md:text-4xl lg:text-5xl font-black leading-tight tracking-tight uppercase drop-shadow-[4px_4px_0_rgba(0,0,0,0.5)] font-display">Inventory Ledger</h1>
           </div>
           <p className="text-parchment/80 text-lg max-w-xl font-handwriting">
             <span className="text-concordia-gold font-bold">Authorized Personnel Only</span> • Concordia Bureau of Missing Items
@@ -358,17 +358,17 @@ export default function EvidenceInventoryLedger() {
         </div>
       </div>
 
-      <div className="relative bg-parchment p-8 md:p-12 shadow-pixel rounded-none border-4 border-wood-dark">
-        {/* Ledger Binding (Stitched/Bound look) */}
-        <div className="absolute left-8 top-0 bottom-0 w-8 border-l-2 border-r-2 border-dashed border-wood-dark/20 flex flex-col items-center justify-around py-4 z-10 pointer-events-none">
+      <div className="relative bg-parchment p-4 md:p-8 lg:p-12 shadow-pixel rounded-none border-4 border-wood-dark">
+        {/* Ledger Binding (Stitched/Bound look) — hidden on mobile to save space */}
+        <div className="hidden md:flex absolute left-8 top-0 bottom-0 w-8 border-l-2 border-r-2 border-dashed border-wood-dark/20 flex-col items-center justify-around py-4 z-10 pointer-events-none">
           {Array.from({ length: 12 }).map((_, i) => (
              <div key={i} className="w-1.5 h-1.5 rounded-full bg-wood-dark/40"></div>
           ))}
         </div>
-        <div className="absolute top-0 left-12 bottom-0 w-px bg-black/5"></div>
+        <div className="hidden md:block absolute top-0 left-12 bottom-0 w-px bg-black/5"></div>
 
-        <div className="pl-12">
-            <div className="flex justify-between items-end mb-10 border-b-2 border-wood-dark/20 pb-4">
+        <div className="md:pl-12">
+            <div className="flex flex-wrap justify-between items-end gap-2 mb-6 md:mb-10 border-b-2 border-wood-dark/20 pb-4">
             <div>
                 <span className="text-concordia-burgundy/80 font-mono text-xs uppercase tracking-[0.3em]">Registry Volume IV</span>
                 <h3 className="text-desk-wood text-3xl font-bold font-serif italic">General Evidence Log</h3>
@@ -412,7 +412,7 @@ export default function EvidenceInventoryLedger() {
 
             {/* Items Table */}
             {!isLoading && !error && items.length > 0 && (
-              <div className="overflow-y-auto max-h-[600px] border-2 border-dashed border-wood-dark/30 custom-scrollbar relative">
+              <div className="overflow-auto max-h-[600px] border-2 border-dashed border-wood-dark/30 custom-scrollbar relative">
                 <table className="w-full border-collapse text-left">
                     <thead className="sticky top-0 z-10 bg-parchment shadow-sm">
                     <tr className="border-b-4 border-wood-dark text-wood-dark">
