@@ -19,6 +19,7 @@ async function proxy(req: NextRequest, { params }: { params: Promise<{ path: str
   const fetchOptions: RequestInit = {
     method: req.method,
     headers,
+    redirect: 'follow',
   };
 
   if (req.method !== 'GET' && req.method !== 'HEAD') {
