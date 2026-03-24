@@ -341,15 +341,6 @@ Ask one more clarifying question about your unique features, then move to verifi
         elif confidence > 0.3 and not self.secret_verified:
             # Partial match - they're getting warmer, increase trust slightly
             self.trust_score = min(100, self.trust_score + 10)
-        elif confidence < 0.2 and len(user_message.split()) > 3:
-            # Low confidence on a substantive message - might be a wrong guess
-            # But be gentle - only increment wrong attempts on very low confidence
-            if confidence < 0.1:
-                self.wrong_attempts += 1
-                self.trust_score = max(0, self.trust_score - 5)
-                
-                if self.wrong_attempts >= self.max_attempts:
-                    self.is_locked = True
         
         # Update system prompt with new state
         self.system_prompt = self._build_system_prompt()
@@ -375,12 +366,19 @@ Ask one more clarifying question about your unique features, then move to verifi
         # Store messages
         self.messages.append({"role": "user", "content": user_message})
         self.messages.append({"role": "assistant", "content": ai_message})
-        
+
+        # Detect if LLM asked for a photo even before secret_verified flag is set
+        photo_keywords = ["photo", "picture", "upload", "image", "show me", "visual proof"]
+        ai_lower = ai_message.lower()
+        if any(kw in ai_lower for kw in photo_keywords) and self.trust_score >= 40:
+            self.verification_requested = True
+            self.secret_verified = True
+
         # Determine status
         if self.is_locked:
             status = "locked"
             can_continue = False
-        elif self.secret_verified:
+        elif self.secret_verified or self.verification_requested:
             status = "verified"
             can_continue = True
             self.verification_requested = True
