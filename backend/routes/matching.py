@@ -499,7 +499,7 @@ async def send_interrogation_message(
     if "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
     
-    # If interrogation is complete, update matching session
+    # If interrogation is complete, update matching session and save to DB
     if result.get("status") == "complete":
         match_manager = get_session_manager()
         match_state = match_manager.get_session(session_id)
@@ -508,6 +508,7 @@ async def send_interrogation_message(
             match_state.match_score = result.get("match_score", 0.0)
             match_state.match_status = result.get("match_status", "needs_review")
             match_state.stage = "complete"
+            await save_match_result(match_state, result)
     
     return InterrogationMessageResponse(
         message=result.get("message", ""),

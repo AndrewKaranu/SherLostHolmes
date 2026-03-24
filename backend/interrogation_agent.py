@@ -370,26 +370,58 @@ They seem to know you well. Be encouraging and keep asking about remaining attri
         self.messages.append({"role": "user", "content": user_message})
         self.messages.append({"role": "assistant", "content": ai_message})
 
-        # Determine status
-        if self.is_locked:
-            status = "locked"
-            can_continue = False
-        elif self.secret_verified:
-            status = "verified"
-            can_continue = True
-            self.verification_requested = True
-        else:
-            status = "questioning"
-            can_continue = True
-        
+        user_msg_count = sum(1 for m in self.messages if m["role"] == "user")
+
+        # Auto-complete when ownership verified after ≥2 exchanges
+        if self.secret_verified and user_msg_count >= 2:
+            self.match_score, self.match_status = calculate_final_match_score(
+                semantic_score=self.semantic_score,
+                trust_score=self.trust_score,
+                secret_verified=True,
+                verification_result=None,
+                wrong_attempts=self.wrong_attempts
+            )
+            return {
+                "message": ai_message,
+                "trust_score": self.trust_score,
+                "wrong_attempts": self.wrong_attempts,
+                "secret_verified": True,
+                "status": "complete",
+                "can_continue": False,
+                "verification_requested": False,
+                "match_score": self.match_score,
+                "match_status": self.match_status,
+            }
+
+        # Also complete when trust is very high even without semantic match
+        if self.trust_score >= 80 and user_msg_count >= 3:
+            self.match_score, self.match_status = calculate_final_match_score(
+                semantic_score=self.semantic_score,
+                trust_score=self.trust_score,
+                secret_verified=self.secret_verified,
+                verification_result=None,
+                wrong_attempts=self.wrong_attempts
+            )
+            return {
+                "message": ai_message,
+                "trust_score": self.trust_score,
+                "wrong_attempts": self.wrong_attempts,
+                "secret_verified": self.secret_verified,
+                "status": "complete",
+                "can_continue": False,
+                "verification_requested": False,
+                "match_score": self.match_score,
+                "match_status": self.match_status,
+            }
+
         return {
             "message": ai_message,
             "trust_score": self.trust_score,
             "wrong_attempts": self.wrong_attempts,
             "secret_verified": self.secret_verified,
-            "status": status,
-            "can_continue": can_continue,
-            "verification_requested": self.verification_requested
+            "status": "questioning",
+            "can_continue": True,
+            "verification_requested": False,
         }
     
     def request_verification(self) -> dict:

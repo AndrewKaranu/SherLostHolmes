@@ -305,13 +305,7 @@ export default function EvidenceBoard() {
         setSecretVerified(true);
         addLog('[Holmes_AI] "The truth reveals itself!"');
       }
-      
-      if (data.verification_requested) {
-        setVerificationRequested(true);
-        setStage('verification');
-        addLog('[System] Photo verification requested');
-      }
-      
+
       if (data.status === 'complete') {
         setMatchResult({
           score: data.match_score,
@@ -781,62 +775,8 @@ export default function EvidenceBoard() {
         <div ref={chatEndRef} />
       </div>
       
-      {/* Verification Upload (if requested) */}
-      {stage === 'verification' && (
-        <div className="p-4 bg-wood-light border-t-4 border-ink">
-          <div className="text-center mb-4">
-            <span className="font-display text-sm text-gray-800">📸 PHOTO VERIFICATION REQUESTED</span>
-          </div>
-          
-          {verificationPreview ? (
-            <div className="flex items-center gap-4 justify-center mb-4">
-              <img src={verificationPreview} alt="Verification" className="w-24 h-24 object-cover border-2 border-ink" />
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={submitVerification}
-                  disabled={isLoading}
-                  className="bg-green-600 hover:bg-green-700 text-white font-display px-4 py-2 border-b-2 border-green-900"
-                >
-                  SUBMIT PROOF
-                </button>
-                <button
-                  onClick={() => { setVerificationImage(null); setVerificationPreview(null); }}
-                  className="text-gray-600 font-handwriting text-sm underline"
-                >
-                  Remove
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center gap-4">
-              <input
-                ref={verificationInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleVerificationUpload}
-                className="hidden"
-              />
-              <button
-                onClick={() => verificationInputRef.current?.click()}
-                className="bg-primary hover:bg-primary-dark text-white font-display px-6 py-3 border-b-4 border-[#561521]"
-              >
-                📷 UPLOAD PHOTO
-              </button>
-              <button
-                onClick={skipVerification}
-                disabled={isLoading}
-                className="text-gray-600 font-handwriting text-lg underline hover:text-gray-800"
-              >
-                I don&apos;t have a photo...
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-      
-      {/* Input (hide during verification) */}
-      {stage === 'interrogation' && (
-        <div className="p-4 bg-wood-dark border-t-4 border-ink">
+      {/* Chat Input */}
+      <div className="p-4 bg-wood-dark border-t-4 border-ink">
           <div className="flex gap-2">
             <input
               type="text"
@@ -856,7 +796,6 @@ export default function EvidenceBoard() {
             </button>
           </div>
         </div>
-      )}
     </div>
   );
 
