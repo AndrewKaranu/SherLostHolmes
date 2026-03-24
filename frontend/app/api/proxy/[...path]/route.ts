@@ -4,7 +4,7 @@ const BACKEND_URL = (process.env.BACKEND_URL || 'http://127.0.0.1:8000').replace
 
 async function proxy(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   const { path: pathSegments } = await params;
-  const path = pathSegments.join('/');
+  const path = pathSegments.join('/').replace(/\/$/, '');
   const search = req.nextUrl.search;
   const targetUrl = `${BACKEND_URL}/${path}${search}`;
 
